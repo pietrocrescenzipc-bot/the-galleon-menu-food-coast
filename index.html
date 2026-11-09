@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Galleon - Food Cost & Menu Engineering Dashboard</title>
+    <title>The Galleon - Food Cost & Gestione Ingredienti</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
@@ -11,12 +11,14 @@
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
         body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; }
         .card-shadow { box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05); }
+        .sidebar-overlay { transition: opacity 0.3s ease-in-out; }
+        .sidebar-content { transition: transform 0.3s ease-in-out; }
     </style>
 </head>
 <body class="text-slate-800 antialiased min-h-screen">
 
-    <!-- Navbar -->
-    <header class="bg-slate-900 text-white sticky top-0 z-50 shadow-lg">
+    <!-- Header Navbar -->
+    <header class="bg-slate-900 text-white sticky top-0 z-40 shadow-lg">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
             <div class="flex items-center gap-3">
                 <div class="w-10 h-10 rounded-xl bg-amber-500 flex items-center justify-center text-slate-950 font-black text-xl shadow-md">
@@ -24,178 +26,173 @@
                 </div>
                 <div>
                     <h1 class="font-extrabold text-lg tracking-tight leading-none text-white">The Galleon Pizzeria</h1>
-                    <p class="text-xs text-amber-400 font-medium">Food Cost & Menu Engineering Dashboard</p>
+                    <p class="text-xs text-amber-400 font-medium">Food Cost Interattivo</p>
                 </div>
             </div>
-            <div class="flex items-center gap-3">
-                <button onclick="exportCSV()" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold flex items-center gap-2 transition shadow">
-                    <i class="fa-solid fa-file-excel"></i> Esporta CSV
+            <div class="flex items-center gap-2">
+                <button onclick="toggleSidebar(true)" class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold flex items-center gap-2 transition shadow">
+                    <i class="fa-solid fa-boxes-packing"></i> Ingredienti & Prezzi
                 </button>
-                <button onclick="openModal()" class="px-3.5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-lg text-xs font-bold flex items-center gap-2 transition shadow">
+                <button onclick="exportCSV()" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center gap-2 transition shadow">
+                    <i class="fa-solid fa-file-excel"></i> Esporta
+                </button>
+                <button onclick="openModal()" class="px-3.5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl text-xs font-extrabold flex items-center gap-2 transition shadow">
                     <i class="fa-solid fa-plus"></i> Nuovo Prodotto
                 </button>
             </div>
         </div>
     </header>
 
+    <!-- Sidebar Ingredienti -->
+    <div id="sidebar-bg" onclick="toggleSidebar(false)" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden opacity-0 sidebar-overlay"></div>
+    <aside id="sidebar-panel" class="fixed top-0 right-0 h-full w-full sm:w-96 bg-white z-50 shadow-2xl transform translate-x-full sidebar-content flex flex-col">
+        <div class="p-4 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800">
+            <div class="flex items-center gap-2">
+                <span class="text-xl">🧀</span>
+                <h3 class="font-bold text-base">Anagrafica Ingredienti</h3>
+            </div>
+            <button onclick="toggleSidebar(false)" class="text-slate-400 hover:text-white text-lg font-bold">✕</button>
+        </div>
+        <div class="p-3 bg-amber-50 border-b border-amber-200 text-xs text-amber-900 flex items-center gap-2">
+            <i class="fa-solid fa-circle-info text-amber-600 text-sm"></i>
+            <span>Modifica il prezzo al Kg/L di un ingrediente per aggiornare <b>tutti i prodotti</b> in tempo reale.</span>
+        </div>
+        <div id="ingredients-list" class="flex-1 overflow-y-auto p-4 space-y-3">
+            <!-- Dynamic Ingredients List -->
+        </div>
+        <div class="p-4 border-t border-slate-100 bg-slate-50">
+            <button onclick="addNewIngredient()" class="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow">
+                <i class="fa-solid fa-plus"></i> Aggiungi Nuovo Ingrediente
+            </button>
+        </div>
+    </aside>
+
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
 
-        <!-- Metrics KPI Banner -->
+        <!-- KPI Summary Cards -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div class="bg-white p-5 rounded-2xl border border-slate-200 card-shadow flex items-center gap-4">
-                <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl font-bold">🍕</div>
+                <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl">🍕</div>
                 <div>
-                    <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Totale Prodotti</p>
+                    <p class="text-xs font-bold uppercase text-slate-400">Totale Prodotti</p>
                     <h3 id="kpi-total-items" class="text-2xl font-black text-slate-900">0</h3>
                 </div>
             </div>
             <div class="bg-white p-5 rounded-2xl border border-slate-200 card-shadow flex items-center gap-4">
-                <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl font-bold">💶</div>
+                <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl">💶</div>
                 <div>
-                    <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Prezzo Medio</p>
+                    <p class="text-xs font-bold uppercase text-slate-400">Prezzo Medio</p>
                     <h3 id="kpi-avg-price" class="text-2xl font-black text-slate-900">€ 0.00</h3>
                 </div>
             </div>
             <div class="bg-white p-5 rounded-2xl border border-slate-200 card-shadow flex items-center gap-4">
-                <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-xl font-bold">📊</div>
+                <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-xl">📊</div>
                 <div>
-                    <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Food Cost Medio %</p>
+                    <p class="text-xs font-bold uppercase text-slate-400">Food Cost Medio %</p>
                     <h3 id="kpi-avg-fc" class="text-2xl font-black text-slate-900">0.0%</h3>
                 </div>
             </div>
             <div class="bg-white p-5 rounded-2xl border border-slate-200 card-shadow flex items-center gap-4">
-                <div class="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl font-bold">💰</div>
+                <div class="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl">💰</div>
                 <div>
-                    <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Margine Medio Unitario</p>
+                    <p class="text-xs font-bold uppercase text-slate-400">Margine Medio</p>
                     <h3 id="kpi-avg-margin" class="text-2xl font-black text-slate-900">€ 0.00</h3>
                 </div>
             </div>
         </div>
 
-        <!-- Section Switcher -->
+        <!-- Filter & View Controls -->
         <div class="flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-slate-200 pb-4">
             <div class="flex items-center gap-2 bg-slate-200 p-1 rounded-xl">
                 <button id="btn-view-visual" onclick="switchView('visual')" class="px-4 py-2 rounded-lg text-xs font-bold bg-white text-slate-900 shadow">
-                    ⭐ Matrice Visiva (A prova di bambino)
-                </button>
-                <button id="btn-view-chart" onclick="switchView('chart')" class="px-4 py-2 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900">
-                    📈 Grafico Dispersione
+                    ⭐ Matrice Visiva
                 </button>
                 <button id="btn-view-table" onclick="switchView('table')" class="px-4 py-2 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900">
-                    📋 Tabella Gestione
+                    📋 Tabella Prodotti
                 </button>
             </div>
             <div class="flex items-center gap-3 w-full sm:w-auto">
                 <div class="relative w-full sm:w-64">
                     <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
-                    <input type="text" id="search-input" oninput="renderAll()" placeholder="Cerca pizza, burger, bevanda..." class="w-full pl-9 pr-4 py-2 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500">
+                    <input type="text" id="search-input" oninput="renderAll()" placeholder="Cerca prodotto o ingrediente..." class="w-full pl-9 pr-4 py-2 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500">
                 </div>
-                <select id="cat-filter" onchange="renderAll()" class="py-2 px-3 text-xs bg-white border border-slate-200 rounded-lg font-semibold focus:outline-none">
+                <select id="cat-filter" onchange="renderAll()" class="py-2 px-3 text-xs bg-white border border-slate-200 rounded-xl font-semibold focus:outline-none">
                     <option value="ALL">Tutte le Categorie</option>
                 </select>
             </div>
         </div>
 
-        <!-- VIEW 1: Matrice Visiva -->
+        <!-- Matrice Visiva -->
         <div id="view-visual" class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            
-            <!-- STELLE -->
             <div class="bg-emerald-50/70 border-2 border-emerald-300 rounded-3xl p-6 space-y-4">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center gap-3">
-                        <span class="text-4xl">⭐</span>
+                        <span class="text-3xl">⭐</span>
                         <div>
-                            <h2 class="text-xl font-black text-emerald-950">LE STELLE</h2>
-                            <p class="text-xs font-bold text-emerald-700">Tanti Guadagni + Tante Vendite</p>
+                            <h2 class="text-lg font-black text-emerald-950">LE STELLE</h2>
+                            <p class="text-xs text-emerald-700">Tanti Guadagni + Tante Vendite</p>
                         </div>
                     </div>
                     <span id="badge-stars" class="px-3 py-1 bg-emerald-600 text-white rounded-full text-xs font-extrabold">0</span>
                 </div>
-                <p class="text-xs text-emerald-900 leading-relaxed bg-white/70 p-3 rounded-xl border border-emerald-200">
-                    💡 <strong>Cosa fare:</strong> Questi sono i tuoi campioni! Non cambiare la ricetta e mettili bene in evidenza nel menù.
-                </p>
-                <div id="list-stars" class="space-y-2 max-h-[420px] overflow-y-auto pr-1"></div>
+                <div id="list-stars" class="space-y-2 max-h-[450px] overflow-y-auto pr-1"></div>
             </div>
 
-            <!-- CAVALLI DI BATTAGLIA -->
             <div class="bg-sky-50/70 border-2 border-sky-300 rounded-3xl p-6 space-y-4">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center gap-3">
-                        <span class="text-4xl">🐎</span>
+                        <span class="text-3xl">🐎</span>
                         <div>
-                            <h2 class="text-xl font-black text-sky-950">CAVALLI DI BATTAGLIA</h2>
-                            <p class="text-xs font-bold text-sky-700">Tante Vendite, Ma Poco Guadagno</p>
+                            <h2 class="text-lg font-black text-sky-950">CAVALLI DI BATTAGLIA</h2>
+                            <p class="text-xs text-sky-700">Tante Vendite, Ma Poco Guadagno</p>
                         </div>
                     </div>
                     <span id="badge-plowhorses" class="px-3 py-1 bg-sky-600 text-white rounded-full text-xs font-extrabold">0</span>
                 </div>
-                <p class="text-xs text-sky-900 leading-relaxed bg-white/70 p-3 rounded-xl border border-sky-200">
-                    💡 <strong>Cosa fare:</strong> I clienti li adorano! Prova ad alzare il prezzo di 0,50€ o proponi l'upgrade all'Impasto Pala.
-                </p>
-                <div id="list-plowhorses" class="space-y-2 max-h-[420px] overflow-y-auto pr-1"></div>
+                <div id="list-plowhorses" class="space-y-2 max-h-[450px] overflow-y-auto pr-1"></div>
             </div>
 
-            <!-- ENIGMI -->
             <div class="bg-amber-50/70 border-2 border-amber-300 rounded-3xl p-6 space-y-4">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center gap-3">
-                        <span class="text-4xl">🧩</span>
+                        <span class="text-3xl">🧩</span>
                         <div>
-                            <h2 class="text-xl font-black text-amber-950">GLI ENIGMI</h2>
-                            <p class="text-xs font-bold text-amber-800">Alto Guadagno, Ma Poche Vendite</p>
+                            <h2 class="text-lg font-black text-amber-950">GLI ENIGMI</h2>
+                            <p class="text-xs text-amber-800">Alto Guadagno, Ma Poche Vendite</p>
                         </div>
                     </div>
                     <span id="badge-puzzles" class="px-3 py-1 bg-amber-600 text-white rounded-full text-xs font-extrabold">0</span>
                 </div>
-                <p class="text-xs text-amber-900 leading-relaxed bg-white/70 p-3 rounded-xl border border-amber-200">
-                    💡 <strong>Cosa fare:</strong> Ci fanno guadagnare molto! Consiglio di consigliarli a voce in sala o fare post sui social.
-                </p>
-                <div id="list-puzzles" class="space-y-2 max-h-[420px] overflow-y-auto pr-1"></div>
+                <div id="list-puzzles" class="space-y-2 max-h-[450px] overflow-y-auto pr-1"></div>
             </div>
 
-            <!-- ZAVORRE -->
             <div class="bg-rose-50/70 border-2 border-rose-300 rounded-3xl p-6 space-y-4">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center gap-3">
-                        <span class="text-4xl">🐕</span>
+                        <span class="text-3xl">🐕</span>
                         <div>
-                            <h2 class="text-xl font-black text-rose-950">LE ZAVORRE</h2>
-                            <p class="text-xs font-bold text-rose-800">Poco Guadagno + Poche Vendite</p>
+                            <h2 class="text-lg font-black text-rose-950">LE ZAVORRE</h2>
+                            <p class="text-xs text-rose-800">Poco Guadagno + Poche Vendite</p>
                         </div>
                     </div>
                     <span id="badge-dogs" class="px-3 py-1 bg-rose-600 text-white rounded-full text-xs font-extrabold">0</span>
                 </div>
-                <p class="text-xs text-rose-900 leading-relaxed bg-white/70 p-3 rounded-xl border border-rose-200">
-                    💡 <strong>Cosa fare:</strong> Vengono ordinati poco e lasciano poco utile. Valuta di toglierli o sostituirli.
-                </p>
-                <div id="list-dogs" class="space-y-2 max-h-[420px] overflow-y-auto pr-1"></div>
-            </div>
-
-        </div>
-
-        <!-- VIEW 2: Grafico a Dispersione -->
-        <div id="view-chart" class="hidden bg-white p-6 rounded-3xl border border-slate-200 card-shadow space-y-4">
-            <h2 class="text-lg font-bold text-slate-900">Matrice Grafica Menu Engineering (BCG)</h2>
-            <div class="h-[500px]">
-                <canvas id="menuChart"></canvas>
+                <div id="list-dogs" class="space-y-2 max-h-[450px] overflow-y-auto pr-1"></div>
             </div>
         </div>
 
-        <!-- VIEW 3: Tabella di Gestione -->
+        <!-- Tabella con Dettagli -->
         <div id="view-table" class="hidden bg-white rounded-3xl border border-slate-200 card-shadow overflow-hidden">
             <div class="overflow-x-auto">
                 <table class="w-full text-left border-collapse text-xs">
                     <thead>
                         <tr class="bg-slate-900 text-white">
-                            <th class="p-3 font-bold">ID</th>
-                            <th class="p-3 font-bold">Categoria</th>
-                            <th class="p-3 font-bold">Prodotto</th>
-                            <th class="p-3 font-bold text-right">Prezzo (€)</th>
-                            <th class="p-3 font-bold text-right">Food Cost (€)</th>
-                            <th class="p-3 font-bold text-right">Margine (€)</th>
-                            <th class="p-3 font-bold text-right">FC %</th>
-                            <th class="p-3 font-bold text-center">Quadrante</th>
-                            <th class="p-3 font-bold text-center">Azione</th>
+                            <th class="p-3.5 font-bold">Prodotto</th>
+                            <th class="p-3.5 font-bold">Ingredienti & Grammature</th>
+                            <th class="p-3.5 font-bold text-right">Prezzo (€)</th>
+                            <th class="p-3.5 font-bold text-right">Food Cost (€)</th>
+                            <th class="p-3.5 font-bold text-right">Margine (€)</th>
+                            <th class="p-3.5 font-bold text-center">Azione</th>
                         </tr>
                     </thead>
                     <tbody id="table-body" class="divide-y divide-slate-100"></tbody>
@@ -205,250 +202,229 @@
 
     </main>
 
-    <!-- Modal Nuovo Prodotto -->
+    <!-- Modal Modifica Prodotto -->
     <div id="modal-item" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl p-6 max-w-md w-full space-y-4 shadow-2xl">
+        <div class="bg-white rounded-3xl p-6 max-w-lg w-full space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto">
             <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-                <h3 class="font-black text-slate-900 text-lg">Aggiungi / Modifica Prodotto</h3>
+                <h3 id="modal-title" class="font-black text-slate-900 text-lg">Modifica Prodotto</h3>
                 <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 font-bold">✕</button>
             </div>
             <form id="item-form" onsubmit="saveItem(event)" class="space-y-3 text-xs">
                 <input type="hidden" id="edit-id">
-                <div>
-                    <label class="font-bold text-slate-700 block mb-1">Categoria</label>
-                    <input type="text" id="edit-cat" required class="w-full p-2.5 border rounded-xl bg-slate-50 focus:bg-white focus:outline-none">
-                </div>
-                <div>
-                    <label class="font-bold text-slate-700 block mb-1">Nome Prodotto</label>
-                    <input type="text" id="edit-name" required class="w-full p-2.5 border rounded-xl bg-slate-50 focus:bg-white focus:outline-none">
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="font-bold text-slate-700 block mb-1">Categoria</label>
+                        <input type="text" id="edit-cat" required class="w-full p-2.5 border rounded-xl bg-slate-50 focus:bg-white focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="font-bold text-slate-700 block mb-1">Nome Prodotto</label>
+                        <input type="text" id="edit-name" required class="w-full p-2.5 border rounded-xl bg-slate-50 focus:bg-white focus:outline-none">
+                    </div>
                 </div>
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="font-bold text-slate-700 block mb-1">Prezzo Vendita (€)</label>
+                        <label class="font-bold text-slate-700 block mb-1">Prezzo (€)</label>
                         <input type="number" step="0.1" id="edit-price" required class="w-full p-2.5 border rounded-xl bg-slate-50 focus:bg-white focus:outline-none">
                     </div>
                     <div>
-                        <label class="font-bold text-slate-700 block mb-1">Food Cost (€)</label>
-                        <input type="number" step="0.01" id="edit-cost" required class="w-full p-2.5 border rounded-xl bg-slate-50 focus:bg-white focus:outline-none">
+                        <label class="font-bold text-slate-700 block mb-1">Volume Mensile (Vendite)</label>
+                        <input type="number" id="edit-vol" required class="w-full p-2.5 border rounded-xl bg-slate-50 focus:bg-white focus:outline-none">
                     </div>
                 </div>
-                <div>
-                    <label class="font-bold text-slate-700 block mb-1">Volume Stimato (Unità/Mese)</label>
-                    <input type="number" id="edit-vol" required class="w-full p-2.5 border rounded-xl bg-slate-50 focus:bg-white focus:outline-none">
+
+                <!-- Lista Ingredienti Dinamica del Prodotto -->
+                <div class="space-y-2 pt-2">
+                    <div class="flex items-center justify-between">
+                        <label class="font-bold text-slate-800">Ingredienti nella ricetta:</label>
+                        <button type="button" onclick="addRecipeRow()" class="text-amber-600 font-bold hover:underline text-[11px]">+ Aggiungi ingrediente</button>
+                    </div>
+                    <div id="recipe-ingredients-container" class="space-y-2"></div>
                 </div>
-                <div class="flex gap-2 pt-2">
-                    <button type="button" onclick="closeModal()" class="w-1/2 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold">Annulla</button>
-                    <button type="submit" class="w-1/2 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl font-bold shadow">Salva Prodotto</button>
+
+                <div class="flex gap-2 pt-4">
+                    <button type="button" onclick="closeModal()" class="w-1/2 py-2.5 bg-slate-100 text-slate-700 rounded-xl font-bold">Annulla</button>
+                    <button type="submit" class="w-1/2 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl font-bold shadow">Salva Modifiche</button>
                 </div>
             </form>
         </div>
     </div>
 
     <script>
+        // Database Ingredienti Centralizzato con Costi al Kg o al Pezzo
+        let ingredientsDB = {
+            "Mozzarella Fior di Latte": { cost: 7.50, unit: "kg" },
+            "Mozzarella di Bufala": { cost: 12.00, unit: "kg" },
+            "Salsa di Pomodoro": { cost: 1.80, unit: "kg" },
+            "Impasto Pizza": { cost: 1.20, unit: "kg" },
+            "Prosciutto Cotto": { cost: 10.00, unit: "kg" },
+            "Prosciutto Crudo": { cost: 16.00, unit: "kg" },
+            "Salame Piccante": { cost: 11.00, unit: "kg" },
+            "Salsiccia": { cost: 8.50, unit: "kg" },
+            "Mortadella": { cost: 9.50, unit: "kg" },
+            "Bun / Pane Hamburger": { cost: 0.40, unit: "pz" },
+            "Carne Hamburger Chianina (220g)": { cost: 2.20, unit: "pz" },
+            "Patatine Fritte (Porzione)": { cost: 0.80, unit: "pz" },
+            "Bibita / Birra": { cost: 0.75, unit: "pz" }
+        };
+
+        // Database Prodotti Menu
         let menuData = [
-            {"id": 1, "categoria": "Antipasti", "prodotto": "Martinica", "prezzo": 12.0, "costo": 0.5, "margine": 11.5, "fc_pct": 4.2, "volume": 45, "quadrante": "PUZZLES (Enigmi)", "dettagli": "Verdure grigliate, fritte, ripiene, crostini, torta al testo"},
-            {"id": 2, "categoria": "Antipasti", "prodotto": "Montserrat", "prezzo": 12.0, "costo": 0.7, "margine": 11.3, "fc_pct": 5.8, "volume": 45, "quadrante": "PUZZLES (Enigmi)", "dettagli": "Bresaola, rucola, grana, cotto, champignon, pachino, torta al testo"},
-            {"id": 3, "categoria": "Antipasti", "prodotto": "Nicaragua", "prezzo": 9.0, "costo": 1.08, "margine": 7.92, "fc_pct": 12.0, "volume": 45, "quadrante": "PUZZLES (Enigmi)", "dettagli": "Bruschette 4 formaggi/tartufata/speck, mozzarella/salsicce/zucchine"},
-            {"id": 4, "categoria": "Antipasti", "prodotto": "Tagliere Nostrano", "prezzo": 10.0, "costo": 2.5, "margine": 7.5, "fc_pct": 25.0, "volume": 45, "quadrante": "PUZZLES (Enigmi)", "dettagli": "Affettati, formaggi, torta al testo"},
-            {"id": 5, "categoria": "Torte al Testo", "prodotto": "Torta al Testo (Salsiccia, Erba, Pecorino)", "prezzo": 8.5, "costo": 0.48, "margine": 8.02, "fc_pct": 5.6, "volume": 45, "quadrante": "PUZZLES (Enigmi)", "dettagli": "Salsiccia, erba cotta, pecorino"},
-            {"id": 6, "categoria": "Pizze alla Pala", "prodotto": "Pala Estiva", "prezzo": 10.0, "costo": 1.53, "margine": 8.47, "fc_pct": 15.3, "volume": 70, "quadrante": "STARS (Stelle)", "dettagli": "Fior di latte, pachino, rucola, mozzarella a crudo"},
-            {"id": 7, "categoria": "Pizze alla Pala", "prodotto": "Genovese", "prezzo": 11.0, "costo": 1.83, "margine": 9.17, "fc_pct": 16.6, "volume": 45, "quadrante": "PUZZLES (Enigmi)", "dettagli": "Fior di latte, crema zucca, alici, pomodori secchi, stracciatella, pesto"},
-            {"id": 8, "categoria": "Pizze alla Pala", "prodotto": "Mortadella", "prezzo": 11.0, "costo": 1.63, "margine": 9.37, "fc_pct": 14.8, "volume": 70, "quadrante": "STARS (Stelle)", "dettagli": "Fior di latte, mortadella, pistacchio, stracciatella"},
-            {"id": 9, "categoria": "Pizze alla Pala", "prodotto": "Alle Noci", "prezzo": 12.0, "costo": 1.73, "margine": 10.27, "fc_pct": 14.4, "volume": 45, "quadrante": "PUZZLES (Enigmi)", "dettagli": "Fior di latte, gorgonzola, speck, pere, noci"},
-            {"id": 10, "categoria": "Pizze alla Pala", "prodotto": "Broccoli", "prezzo": 11.0, "costo": 1.73, "margine": 9.27, "fc_pct": 15.7, "volume": 45, "quadrante": "PUZZLES (Enigmi)", "dettagli": "Fior di latte, provola, broccoli, salsiccia, patate olio verde"},
-            {"id": 11, "categoria": "Pizze alla Pala", "prodotto": "La Fontina", "prezzo": 11.0, "costo": 1.63, "margine": 9.37, "fc_pct": 14.8, "volume": 45, "quadrante": "PUZZLES (Enigmi)", "dettagli": "Fior di latte, crema zucca, fontina, sella di san venanzo"},
-            {"id": 12, "categoria": "Pizze alla Pala", "prodotto": "Lardosa", "prezzo": 12.0, "costo": 2.09, "margine": 9.91, "fc_pct": 17.4, "volume": 45, "quadrante": "PUZZLES (Enigmi)", "dettagli": "Fior di latte, lardo di colonnata, crema carciofi, carciofi, pomodori semi secchi, bufala"},
-            {"id": 13, "categoria": "Pizze alla Pala", "prodotto": "'Nduja di Spilinga", "prezzo": 12.0, "costo": 1.83, "margine": 10.17, "fc_pct": 15.2, "volume": 70, "quadrante": "STARS (Stelle)", "dettagli": "Pomodoro, fior di latte, nduja, cipolla rossa, peperoni, peperoncino"},
-            {"id": 14, "categoria": "Pizze Rosse", "prodotto": "Cuba", "prezzo": 10.0, "costo": 1.66, "margine": 8.34, "fc_pct": 16.6, "volume": 65, "quadrante": "STARS (Stelle)", "dettagli": "Pomodoro, fior di latte, cipolla, peperoni, nduja, peperoncino"},
-            {"id": 15, "categoria": "Pizze Rosse", "prodotto": "Grenada (Perugina)", "prezzo": 7.0, "costo": 1.36, "margine": 5.64, "fc_pct": 19.4, "volume": 110, "quadrante": "PLOWHORSES (Cavalli di Battaglia)", "dettagli": "Pomodoro, fior di latte, salsiccia"},
-            {"id": 16, "categoria": "Pizze Rosse", "prodotto": "Levante (Bismark)", "prezzo": 7.5, "costo": 1.46, "margine": 6.04, "fc_pct": 19.5, "volume": 65, "quadrante": "PLOWHORSES (Cavalli di Battaglia)", "dettagli": "Pomodoro, fior di latte, uovo alla coque, speck"},
-            {"id": 17, "categoria": "Pizze Rosse", "prodotto": "Calabrese", "prezzo": 7.5, "costo": 1.56, "margine": 5.94, "fc_pct": 20.8, "volume": 65, "quadrante": "PLOWHORSES (Cavalli di Battaglia)", "dettagli": "Pomodoro, fior di latte, salame piccante, pomodori semi secchi, salsa piccante"},
-            {"id": 18, "categoria": "Pizze Rosse", "prodotto": "El Guapo", "prezzo": 8.5, "costo": 1.66, "margine": 6.84, "fc_pct": 19.5, "volume": 65, "quadrante": "STARS (Stelle)", "dettagli": "Pomodoro, fior di latte, salame piccante, salsiccia, harissa, capperi"},
-            {"id": 19, "categoria": "Pizze Rosse", "prodotto": "George Town (Vegetariana)", "prezzo": 7.5, "costo": 0.58, "margine": 6.92, "fc_pct": 7.7, "volume": 65, "quadrante": "STARS (Stelle)", "dettagli": "Pomodoro, verdure miste grigliate, origano, olio aglio"},
-            {"id": 20, "categoria": "Pizze Rosse", "prodotto": "Manzanilla (Boscaiola)", "prezzo": 7.5, "costo": 1.46, "margine": 6.04, "fc_pct": 19.5, "volume": 110, "quadrante": "PLOWHORSES (Cavalli di Battaglia)", "dettagli": "Pomodoro, mozzarella, salsiccia, funghi"},
-            {"id": 21, "categoria": "Pizze Rosse", "prodotto": "Maracaibo (4 Stagioni)", "prezzo": 8.0, "costo": 1.76, "margine": 6.24, "fc_pct": 22.0, "volume": 110, "quadrante": "STARS (Stelle)", "dettagli": "Pomodoro, fior di latte, funghi, uovo, carciofi, crudo, olive"},
-            {"id": 22, "categoria": "Pizze Rosse", "prodotto": "Panama", "prezzo": 7.5, "costo": 1.56, "margine": 5.94, "fc_pct": 20.8, "volume": 65, "quadrante": "PLOWHORSES (Cavalli di Battaglia)", "dettagli": "Pomodoro, fior di latte, salsa 4 formaggi, cotto, gorgonzola"},
-            {"id": 23, "categoria": "Pizze Rosse", "prodotto": "Saint Vincent", "prezzo": 7.5, "costo": 1.46, "margine": 6.04, "fc_pct": 19.5, "volume": 65, "quadrante": "PLOWHORSES (Cavalli di Battaglia)", "dettagli": "Pomodoro, fior di latte, peperoni, salsiccia"},
-            {"id": 24, "categoria": "Pizze Rosse", "prodotto": "Port Au Prince", "prezzo": 7.5, "costo": 1.46, "margine": 6.04, "fc_pct": 19.5, "volume": 65, "quadrante": "PLOWHORSES (Cavalli di Battaglia)", "dettagli": "Pomodoro, fior di latte, funghi, salame piccante"},
-            {"id": 25, "categoria": "Pizze Rosse", "prodotto": "Santo Domingo", "prezzo": 7.5, "costo": 1.46, "margine": 6.04, "fc_pct": 19.5, "volume": 65, "quadrante": "PLOWHORSES (Cavalli di Battaglia)", "dettagli": "Pomodoro, fior di latte, salame piccante, 4 formaggi"},
-            {"id": 26, "categoria": "Pizze Rosse", "prodotto": "Tobago (Francescana)", "prezzo": 7.5, "costo": 1.46, "margine": 6.04, "fc_pct": 19.5, "volume": 110, "quadrante": "PLOWHORSES (Cavalli di Battaglia)", "dettagli": "Pomodoro, fior di latte, funghi, crudo"},
-            {"id": 27, "categoria": "Pizze Rosse", "prodotto": "Tortola", "prezzo": 8.0, "costo": 1.86, "margine": 6.14, "fc_pct": 23.2, "volume": 65, "quadrante": "PLOWHORSES (Cavalli di Battaglia)", "dettagli": "Pomodoro, fior di latte, crudo, funghi, salsiccia, peperoncino, rucola, grana"},
-            {"id": 28, "categoria": "Pizze Rosse", "prodotto": "Margherita", "prezzo": 6.0, "costo": 1.26, "margine": 4.74, "fc_pct": 21.0, "volume": 110, "quadrante": "PLOWHORSES (Cavalli di Battaglia)", "dettagli": "Pomodoro, fior di latte"},
-            {"id": 29, "categoria": "Pizze Bianche", "prodotto": "Dominica", "prezzo": 10.0, "costo": 1.46, "margine": 8.54, "fc_pct": 14.6, "volume": 55, "quadrante": "STARS (Stelle)", "dettagli": "Fior di latte, mortadella, pistacchio, stracciatella"},
-            {"id": 30, "categoria": "Pizze Bianche", "prodotto": "Nassau", "prezzo": 7.0, "costo": 1.36, "margine": 5.64, "fc_pct": 19.4, "volume": 90, "quadrante": "PLOWHORSES (Cavalli di Battaglia)", "dettagli": "Fior di latte, pachino, rucola, mozzarella fresca"},
-            {"id": 31, "categoria": "Pizze Bianche", "prodotto": "Antigua", "prezzo": 7.5, "costo": 1.36, "margine": 6.14, "fc_pct": 18.1, "volume": 55, "quadrante": "PLOWHORSES (Cavalli di Battaglia)", "dettagli": "Fior di latte, 4 formaggi, salsa tartufata"},
-            {"id": 32, "categoria": "Pizze Bianche", "prodotto": "Barranquilla", "prezzo": 8.0, "costo": 1.46, "margine": 6.54, "fc_pct": 18.2, "volume": 55, "quadrante": "STARS (Stelle)", "dettagli": "Fior di latte, salsa tartufata, funghi, salsiccia"},
-            {"id": 33, "categoria": "Pizze Bianche", "prodotto": "Belize", "prezzo": 7.5, "costo": 1.46, "margine": 6.04, "fc_pct": 19.5, "volume": 55, "quadrante": "PLOWHORSES (Cavalli di Battaglia)", "dettagli": "Fior di latte, zucchine, pancetta, provola"},
-            {"id": 34, "categoria": "Pizze Bianche", "prodotto": "Bermuda", "prezzo": 8.5, "costo": 1.56, "margine": 6.94, "fc_pct": 18.4, "volume": 55, "quadrante": "STARS (Stelle)", "dettagli": "Fior di latte, gorgonzola, speck, pere, noci"},
-            {"id": 35, "categoria": "Pizze Bianche", "prodotto": "Bufalina", "prezzo": 8.5, "costo": 1.72, "margine": 6.78, "fc_pct": 20.2, "volume": 90, "quadrante": "STARS (Stelle)", "dettagli": "Mozzarella di bufala, pachino, basilico, origano"},
-            {"id": 36, "categoria": "Pizze Bianche", "prodotto": "Cancun", "prezzo": 8.0, "costo": 1.46, "margine": 6.54, "fc_pct": 18.2, "volume": 55, "quadrante": "STARS (Stelle)", "dettagli": "Fior di latte, bresaola, rucola, grana"},
-            {"id": 37, "categoria": "Pizze Bianche", "prodotto": "Caracas", "prezzo": 8.5, "costo": 1.46, "margine": 7.04, "fc_pct": 17.2, "volume": 55, "quadrante": "STARS (Stelle)", "dettagli": "Fior di latte, salmone, rucola, grana"},
-            {"id": 38, "categoria": "Pizze Bianche", "prodotto": "Cartagena (Vegetariana)", "prezzo": 7.5, "costo": 1.66, "margine": 5.84, "fc_pct": 22.1, "volume": 55, "quadrante": "PLOWHORSES (Cavalli di Battaglia)", "dettagli": "Fior di latte, melanzane, zucchine, radicchio, mais, pachino"},
-            {"id": 39, "categoria": "Pizze Bianche", "prodotto": "Eleuthera", "prezzo": 7.5, "costo": 1.46, "margine": 6.04, "fc_pct": 19.5, "volume": 55, "quadrante": "PLOWHORSES (Cavalli di Battaglia)", "dettagli": "Fior di latte, stracchino, rucola, crudo"},
-            {"id": 40, "categoria": "Pizze Bianche", "prodotto": "Emiliana", "prezzo": 7.5, "costo": 1.46, "margine": 6.04, "fc_pct": 19.5, "volume": 55, "quadrante": "PLOWHORSES (Cavalli di Battaglia)", "dettagli": "Fior di latte, capriccio di tartufo, mortadella julienne, rosmarino"},
-            {"id": 41, "categoria": "Pizze Bianche", "prodotto": "Guadalupa", "prezzo": 8.5, "costo": 1.46, "margine": 7.04, "fc_pct": 17.2, "volume": 55, "quadrante": "STARS (Stelle)", "dettagli": "Fior di latte, 4 formaggi, porcini, salsa porcini"},
-            {"id": 42, "categoria": "Pizze Bianche", "prodotto": "Jamaica", "prezzo": 8.0, "costo": 1.46, "margine": 6.54, "fc_pct": 18.2, "volume": 90, "quadrante": "STARS (Stelle)", "dettagli": "Fior di latte, patate lesse, salsiccia, rosmarino"},
-            {"id": 43, "categoria": "Pizze Bianche", "prodotto": "Kingston (Focaccia)", "prezzo": 4.5, "costo": 1.12, "margine": 3.38, "fc_pct": 24.9, "volume": 55, "quadrante": "PLOWHORSES (Cavalli di Battaglia)", "dettagli": "Focaccia classica con olio e rosmarino"},
-            {"id": 44, "categoria": "Pizze Bianche", "prodotto": "Maremma", "prezzo": 8.0, "costo": 1.36, "margine": 6.64, "fc_pct": 17.0, "volume": 55, "quadrante": "STARS (Stelle)", "dettagli": "Fior di latte, crema di zucca, lardo di colonnata"},
-            {"id": 45, "categoria": "Pizze Bianche", "prodotto": "Puerto Rico", "prezzo": 9.0, "costo": 1.66, "margine": 7.34, "fc_pct": 18.4, "volume": 55, "quadrante": "STARS (Stelle)", "dettagli": "Fior di latte, 4 formaggi, gamberetti, salsa rosa, mais, rucola"},
-            {"id": 46, "categoria": "Pizze Bianche", "prodotto": "Tortuga (4 Formaggi)", "prezzo": 8.0, "costo": 1.36, "margine": 6.64, "fc_pct": 17.0, "volume": 90, "quadrante": "STARS (Stelle)", "dettagli": "Fior di latte, 4 formaggi, gorgonzola"},
-            {"id": 47, "categoria": "Hamburger", "prodotto": "Bombardino", "prezzo": 14.0, "costo": 3.41, "margine": 10.59, "fc_pct": 24.4, "volume": 55, "quadrante": "STARS (Stelle)", "dettagli": "Chianina 220g, cheddar, bacon, cipolla caramellata, jalapeno, pomodoro, lattuga, salsa Galleon, pane"},
-            {"id": 48, "categoria": "Hamburger", "prodotto": "Aruba (Cotoletta)", "prezzo": 12.0, "costo": 1.26, "margine": 10.74, "fc_pct": 10.5, "volume": 28, "quadrante": "PUZZLES (Enigmi)", "dettagli": "Cotoletta pollo mazzacro, patate fritte"},
-            {"id": 49, "categoria": "Hamburger", "prodotto": "Bahamas", "prezzo": 15.0, "costo": 3.11, "margine": 11.89, "fc_pct": 20.7, "volume": 28, "quadrante": "PUZZLES (Enigmi)", "dettagli": "Scottona 220g, melanzane, pom semi secchi, provola, maionese, patate arrosto"},
-            {"id": 50, "categoria": "Hamburger", "prodotto": "Curacao", "prezzo": 14.0, "costo": 2.15, "margine": 11.85, "fc_pct": 15.4, "volume": 28, "quadrante": "PUZZLES (Enigmi)", "dettagli": "Pollo 150g, maionese, lattuga, pomodoro, verdure pastellate"},
-            {"id": 51, "categoria": "Hamburger", "prodotto": "Petto di Pollo alla Griglia", "prezzo": 12.0, "costo": 1.36, "margine": 10.64, "fc_pct": 11.3, "volume": 28, "quadrante": "PUZZLES (Enigmi)", "dettagli": "Petto di pollo, contorno a scelta, torta al testo"},
-            {"id": 52, "categoria": "Hamburger", "prodotto": "Hamburger al Piatto", "prezzo": 14.0, "costo": 2.81, "margine": 11.19, "fc_pct": 20.1, "volume": 28, "quadrante": "PUZZLES (Enigmi)", "dettagli": "Chianina 220g, contorno, torta al testo"},
-            {"id": 53, "categoria": "Hamburger", "prodotto": "Anniversary Burger", "prezzo": 15.0, "costo": 3.41, "margine": 11.59, "fc_pct": 22.7, "volume": 55, "quadrante": "STARS (Stelle)", "dettagli": "Angus 220g, cheddar, bacon, pomodoro, cipolla, lattuga, salsa B&B, maionese, patate arrosto"},
-            {"id": 54, "categoria": "Hamburger", "prodotto": "Alessia's Burger", "prezzo": 15.0, "costo": 2.45, "margine": 12.55, "fc_pct": 16.3, "volume": 55, "quadrante": "STARS (Stelle)", "dettagli": "Manzo 150g, burrata, pom semi secchi, mortadella, maionese, rucola, olio basilico, patate dippers"},
-            {"id": 55, "categoria": "Hamburger", "prodotto": "Beef Burger 150g", "prezzo": 13.0, "costo": 3.33, "margine": 9.67, "fc_pct": 25.6, "volume": 28, "quadrante": "PUZZLES (Enigmi)", "dettagli": "Manzo 150g, ragù, melanzane, zucchine, mozzarella piastra, olio verde, lattuga, patatine"},
-            {"id": 56, "categoria": "Hamburger", "prodotto": "Antonio's", "prezzo": 15.0, "costo": 4.09, "margine": 10.91, "fc_pct": 27.3, "volume": 28, "quadrante": "PUZZLES (Enigmi)", "dettagli": "Chianina 220g, mozzarella fresca, 4 formaggi, salsa rosa, bacon, rucola, patate arrosto"},
-            {"id": 57, "categoria": "Hamburger", "prodotto": "Peter's", "prezzo": 15.0, "costo": 3.41, "margine": 11.59, "fc_pct": 22.7, "volume": 28, "quadrante": "PUZZLES (Enigmi)", "dettagli": "Chianina 220g, salsa piccante, sottiletta, cipolla fritta, cetrioli, pomodoro, ketchup, lattuga, patate chips"},
-            {"id": 58, "categoria": "Hamburger", "prodotto": "Double Bacon Burger", "prezzo": 15.0, "costo": 3.41, "margine": 11.59, "fc_pct": 22.7, "volume": 28, "quadrante": "PUZZLES (Enigmi)", "dettagli": "Fassona 200g, doppio bacon, cheddar, cipolla caramellata, insalata, pomodoro, beconaise, chips"},
-            {"id": 59, "categoria": "Hamburger", "prodotto": "Caboto", "prezzo": 9.0, "costo": 2.35, "margine": 6.65, "fc_pct": 26.1, "volume": 28, "quadrante": "PUZZLES (Enigmi)", "dettagli": "Manzo 150g, 4 formaggi, harissa, sottiletta, salsa rosa, crauti, patate fritte"},
-            {"id": 60, "categoria": "Hamburger", "prodotto": "Cabral", "prezzo": 9.0, "costo": 2.15, "margine": 6.85, "fc_pct": 23.9, "volume": 28, "quadrante": "PUZZLES (Enigmi)", "dettagli": "Manzo 150g, bacon, harissa, maionese, patate fritte"},
-            {"id": 61, "categoria": "Hamburger", "prodotto": "Cheeseburger", "prezzo": 10.0, "costo": 2.55, "margine": 7.45, "fc_pct": 25.5, "volume": 55, "quadrante": "STARS (Stelle)", "dettagli": "Manzo 150g, pomodoro, lattuga, cipolla, maionese, 4 formaggi, cheddar, gorgonzola, patate fritte"},
-            {"id": 62, "categoria": "Hamburger", "prodotto": "Hamburger Galleon", "prezzo": 9.5, "costo": 2.45, "margine": 7.05, "fc_pct": 25.8, "volume": 28, "quadrante": "PUZZLES (Enigmi)", "dettagli": "Manzo 150g, amatriciana, pecorino, uovo occhio bue, pomodoro, lattuga, crema mais, chips"},
-            {"id": 63, "categoria": "Hamburger", "prodotto": "Nunez", "prezzo": 9.0, "costo": 2.25, "margine": 6.75, "fc_pct": 25.0, "volume": 28, "quadrante": "PUZZLES (Enigmi)", "dettagli": "Manzo 150g, pomodoro, lattuga, ketchup, maionese, patate fritte"},
-            {"id": 64, "categoria": "Taglieri", "prodotto": "Tagliere Nostrano", "prezzo": 10.0, "costo": 0.9, "margine": 9.1, "fc_pct": 9.0, "volume": 45, "quadrante": "PUZZLES (Enigmi)", "dettagli": "Crudo, sella di san venanzo, capocollo, salame, salsiccia secca, pecorino, caciotta, gorgonzola, torta al testo"},
-            {"id": 65, "categoria": "Panini", "prodotto": "El Perugino", "prezzo": 9.0, "costo": 1.05, "margine": 7.95, "fc_pct": 11.7, "volume": 35, "quadrante": "PUZZLES (Enigmi)", "dettagli": "Doppia salsiccia, cipolla caramellata, peperoni, salsa piccante, maionese, emmental, patate arrosto bacon"},
-            {"id": 66, "categoria": "Panini", "prodotto": "Brigantino", "prezzo": 7.0, "costo": 1.56, "margine": 5.44, "fc_pct": 22.3, "volume": 35, "quadrante": "DOGS (Zavorre)", "dettagli": "Cotoletta pollo, lattuga, pomodoro, maionese, patate fritte"},
-            {"id": 67, "categoria": "Piadine", "prodotto": "Piadina con Mortadella", "prezzo": 12.0, "costo": 2.35, "margine": 9.65, "fc_pct": 19.6, "volume": 35, "quadrante": "PUZZLES (Enigmi)", "dettagli": "Hamburger 150g, burrata, pom semi secchi, rucola, mortadella, maionese, olio basilico"},
-            {"id": 68, "categoria": "Piadine", "prodotto": "Capitano", "prezzo": 6.5, "costo": 1.43, "margine": 5.07, "fc_pct": 22.0, "volume": 35, "quadrante": "DOGS (Zavorre)", "dettagli": "Fior di latte, crudo"},
-            {"id": 69, "categoria": "Piadine", "prodotto": "Chianina", "prezzo": 10.0, "costo": 4.29, "margine": 5.71, "fc_pct": 42.9, "volume": 35, "quadrante": "DOGS (Zavorre)", "dettagli": "Chianina 100g, bacon, cheddar, insalata, pomodoro, cipolla caramellata, ketchup, maionese, mozzarella"},
-            {"id": 70, "categoria": "Piadine", "prodotto": "Mozzo", "prezzo": 7.5, "costo": 0.75, "margine": 6.75, "fc_pct": 10.0, "volume": 35, "quadrante": "PUZZLES (Enigmi)", "dettagli": "Bresaola, rucola, stracchino, champignon"},
-            {"id": 71, "categoria": "Piadine", "prodotto": "Nocchiero", "prezzo": 7.0, "costo": 1.73, "margine": 5.27, "fc_pct": 24.7, "volume": 35, "quadrante": "DOGS (Zavorre)", "dettagli": "Fior di latte, champignon, crudo, rucola, pachino"},
-            {"id": 72, "categoria": "Piadine", "prodotto": "Nostromo", "prezzo": 7.0, "costo": 1.73, "margine": 5.27, "fc_pct": 24.7, "volume": 35, "quadrante": "DOGS (Zavorre)", "dettagli": "Fior di latte, scamorza, speck, mais, pachino"},
-            {"id": 73, "categoria": "Piadine", "prodotto": "Ortolana", "prezzo": 9.0, "costo": 4.09, "margine": 4.91, "fc_pct": 45.4, "volume": 35, "quadrante": "DOGS (Zavorre)", "dettagli": "Chianina 100g, melanzane, pomodoro, insalata, mozzarella, paprika, salse"},
-            {"id": 74, "categoria": "Piadine", "prodotto": "Parmigiana", "prezzo": 7.5, "costo": 0.85, "margine": 6.65, "fc_pct": 11.3, "volume": 35, "quadrante": "PUZZLES (Enigmi)", "dettagli": "Parmigiano, champignon, rucola, pachino, salsiccia"},
-            {"id": 75, "categoria": "Piadine", "prodotto": "Piadina con Sella", "prezzo": 9.0, "costo": 0.55, "margine": 8.45, "fc_pct": 6.1, "volume": 35, "quadrante": "PUZZLES (Enigmi)", "dettagli": "Sella di san venanzo, pecorino"},
-            {"id": 76, "categoria": "Piadine", "prodotto": "Spugna", "prezzo": 8.5, "costo": 1.63, "margine": 6.87, "fc_pct": 19.2, "volume": 35, "quadrante": "PUZZLES (Enigmi)", "dettagli": "Mozzarella, salsiccia, funghi, tartufo"},
-            {"id": 77, "categoria": "Piadine", "prodotto": "Tacchino", "prezzo": 8.0, "costo": 1.73, "margine": 6.27, "fc_pct": 21.6, "volume": 35, "quadrante": "PUZZLES (Enigmi)", "dettagli": "Tacchino, rucola, pachino, mozzarella, salsa tonnata"},
-            {"id": 78, "categoria": "Piadine", "prodotto": "Vegetariana", "prezzo": 7.0, "costo": 1.43, "margine": 5.57, "fc_pct": 20.4, "volume": 35, "quadrante": "DOGS (Zavorre)", "dettagli": "Fior di latte, verdure grigliate"},
-            {"id": 79, "categoria": "Hot Dog", "prodotto": "Tedesco", "prezzo": 8.0, "costo": 1.37, "margine": 6.63, "fc_pct": 17.1, "volume": 35, "quadrante": "PUZZLES (Enigmi)", "dettagli": "Wurstel 90g, cipolla caramellata, crauti, ketchup, maionese, emmental, cipolle fritte"},
-            {"id": 80, "categoria": "Hot Dog", "prodotto": "A Gonfie Vele", "prezzo": 7.0, "costo": 1.07, "margine": 5.93, "fc_pct": 15.3, "volume": 35, "quadrante": "DOGS (Zavorre)", "dettagli": "Wurstel 90g, ketchup, maionese, patate fritte"},
-            {"id": 81, "categoria": "Hot Dog", "prodotto": "In Secca", "prezzo": 7.0, "costo": 2.05, "margine": 4.95, "fc_pct": 29.3, "volume": 35, "quadrante": "DOGS (Zavorre)", "dettagli": "Wurstel 90g, salame piccante, ketchup, mozzarella, patate fritte"},
-            {"id": 82, "categoria": "Friggitoria", "prodotto": "Jalapeno Piccanti Verdi", "prezzo": 6.0, "costo": 1.44, "margine": 4.56, "fc_pct": 24.0, "volume": 45, "quadrante": "DOGS (Zavorre)", "dettagli": "5 pz verdi con cheddar"},
-            {"id": 83, "categoria": "Friggitoria", "prodotto": "Fiori di Zucca", "prezzo": 6.0, "costo": 1.44, "margine": 4.56, "fc_pct": 24.0, "volume": 45, "quadrante": "DOGS (Zavorre)", "dettagli": "4 pz alici"},
-            {"id": 84, "categoria": "Friggitoria", "prodotto": "Patate Arrosto con Bacon", "prezzo": 4.0, "costo": 0.96, "margine": 3.04, "fc_pct": 24.0, "volume": 45, "quadrante": "DOGS (Zavorre)", "dettagli": "Patate arrosto con bacon"},
-            {"id": 85, "categoria": "Friggitoria", "prodotto": "Jalapenos Piccanti Rossi", "prezzo": 6.0, "costo": 1.44, "margine": 4.56, "fc_pct": 24.0, "volume": 45, "quadrante": "DOGS (Zavorre)", "dettagli": "5 pz"},
-            {"id": 86, "categoria": "Friggitoria", "prodotto": "Alette di Pollo", "prezzo": 6.0, "costo": 1.44, "margine": 4.56, "fc_pct": 24.0, "volume": 45, "quadrante": "DOGS (Zavorre)", "dettagli": "6 pz"},
-            {"id": 87, "categoria": "Friggitoria", "prodotto": "Anelli di Cipolla", "prezzo": 5.0, "costo": 1.2, "margine": 3.8, "fc_pct": 24.0, "volume": 45, "quadrante": "DOGS (Zavorre)", "dettagli": "Anelli cipolla"},
-            {"id": 88, "categoria": "Friggitoria", "prodotto": "Chele di Granchio", "prezzo": 5.0, "costo": 1.2, "margine": 3.8, "fc_pct": 24.0, "volume": 45, "quadrante": "DOGS (Zavorre)", "dettagli": "4 pz"},
-            {"id": 89, "categoria": "Friggitoria", "prodotto": "Crocchette di Pollo o Patate", "prezzo": 5.0, "costo": 1.2, "margine": 3.8, "fc_pct": 24.0, "volume": 45, "quadrante": "DOGS (Zavorre)", "dettagli": "7 pz"},
-            {"id": 90, "categoria": "Friggitoria", "prodotto": "Fatto da Noi", "prezzo": 10.0, "costo": 0.5, "margine": 9.5, "fc_pct": 5.0, "volume": 45, "quadrante": "PUZZLES (Enigmi)", "dettagli": "2 roll, 2 crocchette, 2 polpette cheddar, 2 corn hog, patate"},
-            {"id": 91, "categoria": "Friggitoria", "prodotto": "Gran Mix", "prezzo": 10.0, "costo": 0.5, "margine": 9.5, "fc_pct": 5.0, "volume": 45, "quadrante": "PUZZLES (Enigmi)", "dettagli": "2 olive, 2 mozzarelline, 2 crocchette, 2 chele, patatine"},
-            {"id": 92, "categoria": "Friggitoria", "prodotto": "Mix Piccante", "prezzo": 10.0, "costo": 0.5, "margine": 9.5, "fc_pct": 5.0, "volume": 45, "quadrante": "PUZZLES (Enigmi)", "dettagli": "2 jalapenos, 2 alette, anelli, chips, patate peperoncino"},
-            {"id": 93, "categoria": "Friggitoria", "prodotto": "Mozzarelline", "prezzo": 5.0, "costo": 1.2, "margine": 3.8, "fc_pct": 24.0, "volume": 120, "quadrante": "PLOWHORSES (Cavalli di Battaglia)", "dettagli": "7 pz"},
-            {"id": 94, "categoria": "Friggitoria", "prodotto": "Olive Ascolane", "prezzo": 5.0, "costo": 1.2, "margine": 3.8, "fc_pct": 24.0, "volume": 120, "quadrante": "PLOWHORSES (Cavalli di Battaglia)", "dettagli": "7 pz"},
-            {"id": 95, "categoria": "Friggitoria", "prodotto": "Patate Scavate (Dippers)", "prezzo": 5.0, "costo": 1.2, "margine": 3.8, "fc_pct": 24.0, "volume": 45, "quadrante": "DOGS (Zavorre)", "dettagli": "Dippers"},
-            {"id": 96, "categoria": "Friggitoria", "prodotto": "Patate & Wurstel", "prezzo": 6.0, "costo": 0.42, "margine": 5.58, "fc_pct": 7.0, "volume": 45, "quadrante": "DOGS (Zavorre)", "dettagli": "Patate & wurstel"},
-            {"id": 97, "categoria": "Friggitoria", "prodotto": "Patatine", "prezzo": 5.0, "costo": 1.2, "margine": 3.8, "fc_pct": 24.0, "volume": 120, "quadrante": "PLOWHORSES (Cavalli di Battaglia)", "dettagli": "Patatine"},
-            {"id": 98, "categoria": "Friggitoria", "prodotto": "Patatine Chips", "prezzo": 5.0, "costo": 1.2, "margine": 3.8, "fc_pct": 24.0, "volume": 120, "quadrante": "PLOWHORSES (Cavalli di Battaglia)", "dettagli": "Patatine chips"},
-            {"id": 99, "categoria": "Friggitoria", "prodotto": "Suppli", "prezzo": 2.0, "costo": 0.48, "margine": 1.52, "fc_pct": 24.0, "volume": 120, "quadrante": "PLOWHORSES (Cavalli di Battaglia)", "dettagli": "1 pz"},
-            {"id": 100, "categoria": "Friggitoria", "prodotto": "Verdure Fritte", "prezzo": 6.0, "costo": 1.44, "margine": 4.56, "fc_pct": 24.0, "volume": 45, "quadrante": "DOGS (Zavorre)", "dettagli": "Verdure fritte"},
-            {"id": 101, "categoria": "Dolci", "prodotto": "Torta Cheesecake", "prezzo": 5.5, "costo": 1.21, "margine": 4.29, "fc_pct": 22.0, "volume": 60, "quadrante": "PLOWHORSES (Cavalli di Battaglia)", "dettagli": "Cheesecake varia"},
-            {"id": 102, "categoria": "Dolci", "prodotto": "Semifreddo al Pistacchio", "prezzo": 6.0, "costo": 1.32, "margine": 4.68, "fc_pct": 22.0, "volume": 30, "quadrante": "DOGS (Zavorre)", "dettagli": "Semifreddo pistacchio"},
-            {"id": 103, "categoria": "Dolci", "prodotto": "Semifreddo al Croccante", "prezzo": 5.5, "costo": 1.21, "margine": 4.29, "fc_pct": 22.0, "volume": 30, "quadrante": "DOGS (Zavorre)", "dettagli": "Semifreddo croccante"},
-            {"id": 104, "categoria": "Dolci", "prodotto": "Fragole (Stagionali)", "prezzo": 6.0, "costo": 1.32, "margine": 4.68, "fc_pct": 22.0, "volume": 30, "quadrante": "DOGS (Zavorre)", "dettagli": "Fragole panna/limone"},
-            {"id": 105, "categoria": "Dolci", "prodotto": "Crema Catalana", "prezzo": 5.5, "costo": 1.21, "margine": 4.29, "fc_pct": 22.0, "volume": 30, "quadrante": "DOGS (Zavorre)", "dettagli": "Crema catalana"},
-            {"id": 106, "categoria": "Dolci", "prodotto": "Ananas", "prezzo": 5.0, "costo": 1.1, "margine": 3.9, "fc_pct": 22.0, "volume": 30, "quadrante": "DOGS (Zavorre)", "dettagli": "Ananas"},
-            {"id": 107, "categoria": "Dolci", "prodotto": "Coppa Gelato", "prezzo": 5.0, "costo": 1.1, "margine": 3.9, "fc_pct": 22.0, "volume": 30, "quadrante": "DOGS (Zavorre)", "dettagli": "Coppa gelato"},
-            {"id": 108, "categoria": "Dolci", "prodotto": "Crepes", "prezzo": 5.5, "costo": 1.21, "margine": 4.29, "fc_pct": 22.0, "volume": 30, "quadrante": "DOGS (Zavorre)", "dettagli": "Crepes gelato/nutella"},
-            {"id": 109, "categoria": "Dolci", "prodotto": "Frappe", "prezzo": 5.0, "costo": 1.1, "margine": 3.9, "fc_pct": 22.0, "volume": 30, "quadrante": "DOGS (Zavorre)", "dettagli": "Frappe"},
-            {"id": 110, "categoria": "Dolci", "prodotto": "Gelato al Cocco", "prezzo": 5.0, "costo": 1.1, "margine": 3.9, "fc_pct": 22.0, "volume": 30, "quadrante": "DOGS (Zavorre)", "dettagli": "Gelato cocco"},
-            {"id": 111, "categoria": "Dolci", "prodotto": "Gran Limone", "prezzo": 5.0, "costo": 1.1, "margine": 3.9, "fc_pct": 22.0, "volume": 30, "quadrante": "DOGS (Zavorre)", "dettagli": "Gran limone"},
-            {"id": 112, "categoria": "Dolci", "prodotto": "Macedonia", "prezzo": 5.0, "costo": 1.1, "margine": 3.9, "fc_pct": 22.0, "volume": 30, "quadrante": "DOGS (Zavorre)", "dettagli": "Macedonia"},
-            {"id": 113, "categoria": "Dolci", "prodotto": "Panna Cotta", "prezzo": 5.0, "costo": 1.1, "margine": 3.9, "fc_pct": 22.0, "volume": 30, "quadrante": "DOGS (Zavorre)", "dettagli": "Panna cotta"},
-            {"id": 114, "categoria": "Dolci", "prodotto": "Pizza Dolce", "prezzo": 7.0, "costo": 1.54, "margine": 5.46, "fc_pct": 22.0, "volume": 30, "quadrante": "DOGS (Zavorre)", "dettagli": "Pizza nutella/panna nocciola"},
-            {"id": 115, "categoria": "Dolci", "prodotto": "Tartufo", "prezzo": 5.0, "costo": 1.1, "margine": 3.9, "fc_pct": 22.0, "volume": 30, "quadrante": "DOGS (Zavorre)", "dettagli": "Tartufo bianco/nero"},
-            {"id": 116, "categoria": "Dolci", "prodotto": "Tiramisu", "prezzo": 5.5, "costo": 1.21, "margine": 4.29, "fc_pct": 22.0, "volume": 60, "quadrante": "PLOWHORSES (Cavalli di Battaglia)", "dettagli": "Tiramisu"},
-            {"id": 117, "categoria": "Dolci", "prodotto": "Tortino al Cioccolato", "prezzo": 5.5, "costo": 1.21, "margine": 4.29, "fc_pct": 22.0, "volume": 60, "quadrante": "PLOWHORSES (Cavalli di Battaglia)", "dettagli": "Tortino cuore caldo"},
-            {"id": 118, "categoria": "Bibite & Alcolici", "prodotto": "Acqua 0.5L", "prezzo": 1.5, "costo": 0.38, "margine": 1.12, "fc_pct": 25.3, "volume": 35, "quadrante": "DOGS (Zavorre)", "dettagli": "Acqua 0.5L"},
-            {"id": 119, "categoria": "Bibite & Alcolici", "prodotto": "Acqua 1L", "prezzo": 2.5, "costo": 0.62, "margine": 1.88, "fc_pct": 24.8, "volume": 35, "quadrante": "DOGS (Zavorre)", "dettagli": "Acqua 1L"},
-            {"id": 120, "categoria": "Bibite & Alcolici", "prodotto": "Bibite Lattina 0.33L", "prezzo": 3.0, "costo": 0.75, "margine": 2.25, "fc_pct": 25.0, "volume": 35, "quadrante": "DOGS (Zavorre)", "dettagli": "Coca/Fanta/Sprite/The"},
-            {"id": 121, "categoria": "Bibite & Alcolici", "prodotto": "Carlsberg 0.30L", "prezzo": 3.5, "costo": 0.88, "margine": 2.62, "fc_pct": 25.1, "volume": 35, "quadrante": "DOGS (Zavorre)", "dettagli": "Birra spina 0.3L"},
-            {"id": 122, "categoria": "Bibite & Alcolici", "prodotto": "Carlsberg 0.40L", "prezzo": 5.0, "costo": 1.25, "margine": 3.75, "fc_pct": 25.0, "volume": 35, "quadrante": "DOGS (Zavorre)", "dettagli": "Birra spina 0.4L"},
-            {"id": 123, "categoria": "Bibite & Alcolici", "prodotto": "Grimbergen Double 0.25L", "prezzo": 4.0, "costo": 1.0, "margine": 3.0, "fc_pct": 25.0, "volume": 35, "quadrante": "DOGS (Zavorre)", "dettagli": "Birra spina 0.25L"},
-            {"id": 124, "categoria": "Bibite & Alcolici", "prodotto": "Grimbergen Double 0.50L", "prezzo": 6.0, "costo": 1.5, "margine": 4.5, "fc_pct": 25.0, "volume": 35, "quadrante": "DOGS (Zavorre)", "dettagli": "Birra spina 0.5L"},
-            {"id": 125, "categoria": "Bibite & Alcolici", "prodotto": "Special Brew 0.30L", "prezzo": 4.5, "costo": 1.12, "margine": 3.38, "fc_pct": 24.9, "volume": 35, "quadrante": "DOGS (Zavorre)", "dettagli": "Birra spina 0.3L"},
-            {"id": 126, "categoria": "Bibite & Alcolici", "prodotto": "Special Brew 0.40L", "prezzo": 5.5, "costo": 1.38, "margine": 4.12, "fc_pct": 25.1, "volume": 35, "quadrante": "DOGS (Zavorre)", "dettagli": "Birra spina 0.4L"},
-            {"id": 127, "categoria": "Bibite & Alcolici", "prodotto": "Tucher Weizen 0.33L", "prezzo": 4.5, "costo": 1.12, "margine": 3.38, "fc_pct": 24.9, "volume": 35, "quadrante": "DOGS (Zavorre)", "dettagli": "Birra spina 0.33L"},
-            {"id": 128, "categoria": "Bibite & Alcolici", "prodotto": "Tucher Weizen 0.50L", "prezzo": 6.0, "costo": 1.5, "margine": 4.5, "fc_pct": 25.0, "volume": 35, "quadrante": "DOGS (Zavorre)", "dettagli": "Birra spina 0.5L"},
-            {"id": 129, "categoria": "Bibite & Alcolici", "prodotto": "Engel Radler", "prezzo": 5.0, "costo": 1.25, "margine": 3.75, "fc_pct": 25.0, "volume": 35, "quadrante": "DOGS (Zavorre)", "dettagli": "Bottiglia"},
-            {"id": 130, "categoria": "Bibite & Alcolici", "prodotto": "Birra Gluten Free", "prezzo": 4.0, "costo": 1.0, "margine": 3.0, "fc_pct": 25.0, "volume": 35, "quadrante": "DOGS (Zavorre)", "dettagli": "Bottiglia 33cl"},
-            {"id": 131, "categoria": "Bibite & Alcolici", "prodotto": "Tennent's Super", "prezzo": 4.0, "costo": 1.0, "margine": 3.0, "fc_pct": 25.0, "volume": 35, "quadrante": "DOGS (Zavorre)", "dettagli": "Bottiglia 33cl"},
-            {"id": 132, "categoria": "Bibite & Alcolici", "prodotto": "Vino Antonutti 0.375L", "prezzo": 7.0, "costo": 1.75, "margine": 5.25, "fc_pct": 25.0, "volume": 35, "quadrante": "DOGS (Zavorre)", "dettagli": "Vino 0.375L"},
-            {"id": 133, "categoria": "Bibite & Alcolici", "prodotto": "Vino Antonutti 0.75L", "prezzo": 15.0, "costo": 3.75, "margine": 11.25, "fc_pct": 25.0, "volume": 35, "quadrante": "PUZZLES (Enigmi)", "dettagli": "Vino 0.75L"},
-            {"id": 134, "categoria": "Bibite & Alcolici", "prodotto": "Amari", "prezzo": 3.5, "costo": 0.88, "margine": 2.62, "fc_pct": 25.1, "volume": 35, "quadrante": "DOGS (Zavorre)", "dettagli": "Amari"},
-            {"id": 135, "categoria": "Bibite & Alcolici", "prodotto": "Grappa", "prezzo": 4.0, "costo": 1.0, "margine": 3.0, "fc_pct": 25.0, "volume": 35, "quadrante": "DOGS (Zavorre)", "dettagli": "Grappa"},
-            {"id": 136, "categoria": "Bibite & Alcolici", "prodotto": "Caffe Espresso", "prezzo": 1.5, "costo": 0.38, "margine": 1.12, "fc_pct": 25.3, "volume": 35, "quadrante": "DOGS (Zavorre)", "dettagli": "Caffe"}
+            {
+                id: 1, categoria: "Pizze Rosse", prodotto: "Margherita", prezzo: 6.50, volume: 110,
+                recipe: [
+                    { ing: "Impasto Pizza", qty: 250, unit: "g" },
+                    { ing: "Salsa di Pomodoro", qty: 70, unit: "g" },
+                    { ing: "Mozzarella Fior di Latte", qty: 110, unit: "g" }
+                ]
+            },
+            {
+                id: 2, categoria: "Pizze Rosse", prodotto: "Diavola", prezzo: 8.50, volume: 85,
+                recipe: [
+                    { ing: "Impasto Pizza", qty: 250, unit: "g" },
+                    { ing: "Salsa di Pomodoro", qty: 70, unit: "g" },
+                    { ing: "Mozzarella Fior di Latte", qty: 110, unit: "g" },
+                    { ing: "Salame Piccante", qty: 50, unit: "g" }
+                ]
+            },
+            {
+                id: 3, categoria: "Pizze Bianche", prodotto: "Bufalina", prezzo: 9.50, volume: 90,
+                recipe: [
+                    { ing: "Impasto Pizza", qty: 250, unit: "g" },
+                    { ing: "Mozzarella di Bufala", qty: 140, unit: "g" }
+                ]
+            },
+            {
+                id: 4, categoria: "Hamburger", prodotto: "Bombardino", prezzo: 13.00, volume: 55,
+                recipe: [
+                    { ing: "Bun / Pane Hamburger", qty: 1, unit: "pz" },
+                    { ing: "Carne Hamburger Chianina (220g)", qty: 1, unit: "pz" },
+                    { ing: "Patatine Fritte (Porzione)", qty: 1, unit: "pz" }
+                ]
+            }
         ];
-        let chartInstance = null;
+
+        // Calcola in automatico il Food Cost di un prodotto basandosi sui prezzi correnti degli ingredienti
+        function calculateProductCost(item) {
+            let totalCost = 0;
+            item.recipe.forEach(r => {
+                const ing = ingredientsDB[r.ing];
+                if (ing) {
+                    if (r.unit === 'g') {
+                        totalCost += (ing.cost / 1000) * r.qty;
+                    } else {
+                        totalCost += ing.cost * r.qty;
+                    }
+                }
+            });
+            return totalCost;
+        }
 
         function init() {
+            renderSidebar();
             populateCategories();
             renderAll();
+        }
+
+        // Renderizza il menu laterale degli ingredienti
+        function renderSidebar() {
+            const list = document.getElementById('ingredients-list');
+            list.innerHTML = '';
+            Object.keys(ingredientsDB).forEach(name => {
+                const item = ingredientsDB[name];
+                list.innerHTML += `
+                    <div class="bg-slate-50 p-3 rounded-2xl border border-slate-200 space-y-1 hover:border-indigo-300 transition">
+                        <span class="font-bold text-slate-800 text-xs">${name}</span>
+                        <div class="flex items-center gap-2 pt-1">
+                            <span class="text-xs text-slate-500 font-bold">€</span>
+                            <input type="number" step="0.05" value="${item.cost.toFixed(2)}" onchange="updateIngredientCost('${name}', this.value)" class="w-24 p-1.5 text-xs font-bold border rounded-lg bg-white focus:ring-2 focus:ring-indigo-500">
+                            <span class="text-xs text-slate-400 font-semibold">/ ${item.unit}</span>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function updateIngredientCost(name, newCost) {
+            const val = parseFloat(newCost);
+            if (!isNaN(val) && val >= 0) {
+                ingredientsDB[name].cost = val;
+                renderAll(); // Ricalcola subito tutto il menu!
+            }
+        }
+
+        function addNewIngredient() {
+            const name = prompt("Nome del nuovo ingrediente:");
+            if (name && !ingredientsDB[name]) {
+                ingredientsDB[name] = { cost: 5.00, unit: "kg" };
+                renderSidebar();
+            }
+        }
+
+        function toggleSidebar(open) {
+            const bg = document.getElementById('sidebar-bg');
+            const panel = document.getElementById('sidebar-panel');
+            if (open) {
+                bg.classList.remove('hidden');
+                setTimeout(() => { bg.classList.remove('opacity-0'); panel.classList.remove('translate-x-full'); }, 10);
+            } else {
+                bg.classList.add('opacity-0');
+                panel.classList.add('translate-x-full');
+                setTimeout(() => bg.classList.add('hidden'), 300);
+            }
         }
 
         function populateCategories() {
             const select = document.getElementById('cat-filter');
             const cats = [...new Set(menuData.map(i => i.categoria))];
             select.innerHTML = '<option value="ALL">Tutte le Categorie</option>';
-            cats.forEach(c => {
-                select.innerHTML += `<option value="${c}">${c}</option>`;
-            });
-        }
-
-        function computeQuadrants() {
-            const filtered = getFilteredData();
-            if(!filtered.length) return;
-            const avgM = filtered.reduce((acc, i) => acc + i.margine, 0) / filtered.length;
-            const avgV = filtered.reduce((acc, i) => acc + i.volume, 0) / filtered.length;
-
-            menuData.forEach(item => {
-                if (item.margine >= avgM && item.volume >= avgV) item.quadrante = 'STARS (Stelle)';
-                else if (item.margine < avgM && item.volume >= avgV) item.quadrante = 'PLOWHORSES (Cavalli di Battaglia)';
-                else if (item.margine >= avgM && item.volume < avgV) item.quadrante = 'PUZZLES (Enigmi)';
-                else item.quadrante = 'DOGS (Zavorre)';
-            });
+            cats.forEach(c => select.innerHTML += `<option value="${c}">${c}</option>`);
         }
 
         function getFilteredData() {
             const search = document.getElementById('search-input').value.toLowerCase();
             const cat = document.getElementById('cat-filter').value;
             return menuData.filter(i => {
-                const matchSearch = i.prodotto.toLowerCase().includes(search) || i.categoria.toLowerCase().includes(search);
+                const cost = calculateProductCost(i);
+                const margin = i.prezzo - cost;
+                const recipeStr = i.recipe.map(r => `${r.ing} ${r.qty}${r.unit}`).join(' ');
+                const matchSearch = i.prodotto.toLowerCase().includes(search) || i.categoria.toLowerCase().includes(search) || recipeStr.toLowerCase().includes(search);
                 const matchCat = (cat === 'ALL' || i.categoria === cat);
                 return matchSearch && matchCat;
             });
         }
 
         function renderAll() {
-            computeQuadrants();
             const data = getFilteredData();
 
+            // Calcola costi e margini aggiornati
+            let totalMargin = 0, totalFC = 0, totalPrice = 0;
+            data.forEach(i => {
+                i.computedCost = calculateProductCost(i);
+                i.computedMargin = i.prezzo - i.computedCost;
+                i.computedFC = (i.computedCost / i.prezzo) * 100;
+                totalMargin += i.computedMargin;
+                totalFC += i.computedFC;
+                totalPrice += i.prezzo;
+            });
+
+            // KPI
             document.getElementById('kpi-total-items').innerText = data.length;
-            const avgP = data.length ? data.reduce((a, b) => a + b.prezzo, 0) / data.length : 0;
-            const avgFC = data.length ? data.reduce((a, b) => a + b.fc_pct, 0) / data.length : 0;
-            const avgM = data.length ? data.reduce((a, b) => a + b.margine, 0) / data.length : 0;
-            
-            document.getElementById('kpi-avg-price').innerText = '€ ' + avgP.toFixed(2);
-            document.getElementById('kpi-avg-fc').innerText = avgFC.toFixed(1) + '%';
-            document.getElementById('kpi-avg-margin').innerText = '€ ' + avgM.toFixed(2);
+            document.getElementById('kpi-avg-price').innerText = '€ ' + (data.length ? totalPrice / data.length : 0).toFixed(2);
+            document.getElementById('kpi-avg-fc').innerText = (data.length ? totalFC / data.length : 0).toFixed(1) + '%';
+            document.getElementById('kpi-avg-margin').innerText = '€ ' + (data.length ? totalMargin / data.length : 0).toFixed(2);
 
-            renderVisualLists(data);
-            renderTable(data);
+            // Quadranti
+            const avgM = data.length ? totalMargin / data.length : 0;
+            const avgV = data.length ? data.reduce((a, b) => a + b.volume, 0) / data.length : 0;
 
-            if(!document.getElementById('view-chart').classList.contains('hidden')) {
-                renderChart(data);
-            }
-        }
+            const stars = [], plowhorses = [], puzzles = [], dogs = [];
 
-        function renderVisualLists(data) {
-            const stars = data.filter(i => i.quadrante.includes('STARS'));
-            const plowhorses = data.filter(i => i.quadrante.includes('PLOWHORSES'));
-            const puzzles = data.filter(i => i.quadrante.includes('PUZZLES'));
-            const dogs = data.filter(i => i.quadrante.includes('DOGS'));
+            data.forEach(i => {
+                if (i.computedMargin >= avgM && i.volume >= avgV) stars.push(i);
+                else if (i.computedMargin < avgM && i.volume >= avgV) plowhorses.push(i);
+                else if (i.computedMargin >= avgM && i.volume < avgV) puzzles.push(i);
+                else dogs.push(i);
+            });
 
             document.getElementById('badge-stars').innerText = stars.length;
             document.getElementById('badge-plowhorses').innerText = plowhorses.length;
@@ -456,20 +432,20 @@
             document.getElementById('badge-dogs').innerText = dogs.length;
 
             const makeCard = (i) => `
-                <div class="bg-white p-3 rounded-2xl border border-slate-200 flex items-center justify-between shadow-sm hover:border-slate-400 transition">
-                    <div>
-                        <div class="flex items-center gap-2">
-                            <h4 class="font-bold text-slate-900 text-xs">${i.prodotto}</h4>
-                            <span class="text-[10px] px-2 py-0.5 bg-slate-100 text-slate-600 rounded-full font-semibold">${i.categoria}</span>
-                        </div>
-                        <p class="text-[11px] text-slate-500 mt-0.5">Prezzo: <strong>€${i.prezzo.toFixed(2)}</strong> | FC: <span class="text-amber-600 font-bold">€${i.costo.toFixed(2)}</span> (${i.fc_pct}%)</p>
-                    </div>
-                    <div class="text-right flex items-center gap-3">
+                <div class="bg-white p-3.5 rounded-2xl border border-slate-200 space-y-2 shadow-sm hover:border-slate-300 transition">
+                    <div class="flex items-center justify-between">
                         <div>
-                            <span class="text-xs font-black text-emerald-600 block">+€${i.margine.toFixed(2)}</span>
-                            <span class="text-[10px] text-slate-400">${i.volume} u./mese</span>
+                            <h4 class="font-bold text-slate-900 text-xs">${i.prodotto}</h4>
+                            <span class="text-[10px] text-slate-500 font-semibold uppercase">${i.categoria}</span>
                         </div>
-                        <button onclick="editItem(${i.id})" class="text-slate-400 hover:text-slate-800 text-xs p-1"><i class="fa-solid fa-pen"></i></button>
+                        <span class="text-xs font-black text-emerald-600">+€${i.computedMargin.toFixed(2)}</span>
+                    </div>
+                    <p class="text-[11px] text-slate-600 bg-slate-50 p-2 rounded-xl border border-slate-100 font-mono">
+                        <i class="fa-solid fa-utensils text-amber-500 mr-1"></i> ${i.recipe.map(r => `${r.ing} (${r.qty}${r.unit})`).join(' • ')}
+                    </p>
+                    <div class="flex items-center justify-between text-[11px] text-slate-500 pt-1 border-t border-slate-100">
+                        <span>Prezzo: <b>€${i.prezzo.toFixed(2)}</b> | FC: <b class="text-amber-700">€${i.computedCost.toFixed(2)}</b> (${i.computedFC.toFixed(1)}%)</span>
+                        <button onclick="editItem(${i.id})" class="text-amber-600 font-bold px-2 py-1 bg-amber-50 rounded-lg hover:bg-amber-100">Modifica</button>
                     </div>
                 </div>
             `;
@@ -478,122 +454,83 @@
             document.getElementById('list-plowhorses').innerHTML = plowhorses.map(makeCard).join('') || '<p class="text-xs text-slate-400">Nessun prodotto</p>';
             document.getElementById('list-puzzles').innerHTML = puzzles.map(makeCard).join('') || '<p class="text-xs text-slate-400">Nessun prodotto</p>';
             document.getElementById('list-dogs').innerHTML = dogs.map(makeCard).join('') || '<p class="text-xs text-slate-400">Nessun prodotto</p>';
-        }
 
-        function renderTable(data) {
-            const tbody = document.getElementById('table-body');
-            tbody.innerHTML = data.map(i => `
+            // Table
+            document.getElementById('table-body').innerHTML = data.map(i => `
                 <tr class="hover:bg-slate-50 transition">
-                    <td class="p-3 text-slate-400 font-mono">${i.id}</td>
-                    <td class="p-3 font-medium text-slate-600">${i.categoria}</td>
-                    <td class="p-3 font-bold text-slate-900">${i.prodotto}</td>
-                    <td class="p-3 text-right font-bold text-slate-900">€${i.prezzo.toFixed(2)}</td>
-                    <td class="p-3 text-right font-medium text-amber-700">€${i.costo.toFixed(2)}</td>
-                    <td class="p-3 text-right font-bold text-emerald-600">€${i.margine.toFixed(2)}</td>
-                    <td class="p-3 text-right text-slate-500">${i.fc_pct}%</td>
-                    <td class="p-3 text-center">
-                        <span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold ${getBadgeStyle(i.quadrante)}">${i.quadrante.split(' ')[0]}</span>
+                    <td class="p-3">
+                        <span class="font-bold text-slate-900 block text-sm">${i.prodotto}</span>
+                        <span class="text-[10px] text-slate-500 uppercase font-semibold">${i.categoria}</span>
                     </td>
+                    <td class="p-3 font-mono text-[11px] text-slate-700">
+                        ${i.recipe.map(r => `${r.ing} (${r.qty}${r.unit})`).join(', ')}
+                    </td>
+                    <td class="p-3 text-right font-bold text-slate-900">€${i.prezzo.toFixed(2)}</td>
+                    <td class="p-3 text-right font-medium text-amber-700">€${i.computedCost.toFixed(2)} (${i.computedFC.toFixed(1)}%)</td>
+                    <td class="p-3 text-right font-bold text-emerald-600">€${i.computedMargin.toFixed(2)}</td>
                     <td class="p-3 text-center space-x-2">
-                        <button onclick="editItem(${i.id})" class="text-slate-600 hover:text-slate-900 font-bold"><i class="fa-solid fa-pen"></i></button>
-                        <button onclick="deleteItem(${i.id})" class="text-rose-500 hover:text-rose-700 font-bold"><i class="fa-solid fa-trash"></i></button>
+                        <button onclick="editItem(${i.id})" class="text-slate-600 font-bold bg-slate-100 p-2 rounded-xl hover:bg-slate-200"><i class="fa-solid fa-pen"></i></button>
+                        <button onclick="deleteItem(${i.id})" class="text-rose-500 font-bold bg-rose-50 p-2 rounded-xl hover:bg-rose-100"><i class="fa-solid fa-trash"></i></button>
                     </td>
                 </tr>
             `).join('');
         }
 
-        function getBadgeStyle(q) {
-            if(q.includes('STARS')) return 'bg-emerald-100 text-emerald-800';
-            if(q.includes('PLOWHORSES')) return 'bg-sky-100 text-sky-800';
-            if(q.includes('PUZZLES')) return 'bg-amber-100 text-amber-800';
-            return 'bg-rose-100 text-rose-800';
-        }
-
         function switchView(view) {
             document.getElementById('view-visual').classList.add('hidden');
-            document.getElementById('view-chart').classList.add('hidden');
             document.getElementById('view-table').classList.add('hidden');
-
             document.getElementById('btn-view-visual').className = 'px-4 py-2 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900';
-            document.getElementById('btn-view-chart').className = 'px-4 py-2 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900';
             document.getElementById('btn-view-table').className = 'px-4 py-2 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900';
 
-            if(view === 'visual') {
+            if (view === 'visual') {
                 document.getElementById('view-visual').classList.remove('hidden');
                 document.getElementById('btn-view-visual').className = 'px-4 py-2 rounded-lg text-xs font-bold bg-white text-slate-900 shadow';
-            } else if(view === 'chart') {
-                document.getElementById('view-chart').classList.remove('hidden');
-                document.getElementById('btn-view-chart').className = 'px-4 py-2 rounded-lg text-xs font-bold bg-white text-slate-900 shadow';
-                renderChart(getFilteredData());
             } else {
                 document.getElementById('view-table').classList.remove('hidden');
                 document.getElementById('btn-view-table').className = 'px-4 py-2 rounded-lg text-xs font-bold bg-white text-slate-900 shadow';
             }
         }
 
-        function renderChart(data) {
-            const ctx = document.getElementById('menuChart').getContext('2d');
-            if(chartInstance) chartInstance.destroy();
-
-            chartInstance = new Chart(ctx, {
-                type: 'scatter',
-                data: {
-                    datasets: [
-                        {
-                            label: 'Stelle',
-                            data: data.filter(i => i.quadrante.includes('STARS')).map(i => ({ x: i.volume, y: i.margine, name: i.prodotto })),
-                            backgroundColor: '#10b981'
-                        },
-                        {
-                            label: 'Cavalli di Battaglia',
-                            data: data.filter(i => i.quadrante.includes('PLOWHORSES')).map(i => ({ x: i.volume, y: i.margine, name: i.prodotto })),
-                            backgroundColor: '#0284c7'
-                        },
-                        {
-                            label: 'Enigmi',
-                            data: data.filter(i => i.quadrante.includes('PUZZLES')).map(i => ({ x: i.volume, y: i.margine, name: i.prodotto })),
-                            backgroundColor: '#f59e0b'
-                        },
-                        {
-                            label: 'Zavorre',
-                            data: data.filter(i => i.quadrante.includes('DOGS')).map(i => ({ x: i.volume, y: i.margine, name: i.prodotto })),
-                            backgroundColor: '#f43f5e'
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        tooltip: {
-                            callbacks: {
-                                label: (ctx) => `${ctx.raw.name}: €${ctx.raw.y.toFixed(2)} (Vol: ${ctx.raw.x})`
-                            }
-                        }
-                    },
-                    scales: {
-                        x: { title: { display: true, text: 'Volume stimato (Unità/Mese)' } },
-                        y: { title: { display: true, text: 'Margine Lordo (€)' } }
-                    }
-                }
-            });
-        }
-
         function editItem(id) {
             const item = menuData.find(i => i.id === id);
-            if(!item) return;
+            if (!item) return;
             document.getElementById('edit-id').value = item.id;
             document.getElementById('edit-cat').value = item.categoria;
             document.getElementById('edit-name').value = item.prodotto;
             document.getElementById('edit-price').value = item.prezzo;
-            document.getElementById('edit-cost').value = item.costo;
             document.getElementById('edit-vol').value = item.volume;
+
+            const container = document.getElementById('recipe-ingredients-container');
+            container.innerHTML = '';
+            item.recipe.forEach(r => addRecipeRow(r.ing, r.qty, r.unit));
+
             document.getElementById('modal-item').classList.remove('hidden');
+        }
+
+        function addRecipeRow(selectedIng = '', qty = 100, unit = 'g') {
+            const container = document.getElementById('recipe-ingredients-container');
+            const rowId = Date.now() + Math.random();
+            let options = Object.keys(ingredientsDB).map(ing => `<option value="${ing}" ${ing === selectedIng ? 'selected' : ''}>${ing}</option>`).join('');
+
+            const rowHTML = `
+                <div id="row-${rowId}" class="flex items-center gap-2 bg-slate-50 p-2 rounded-xl border border-slate-200">
+                    <select class="ing-select w-1/2 p-1.5 text-xs bg-white border rounded-lg">${options}</select>
+                    <input type="number" value="${qty}" class="ing-qty w-1/4 p-1.5 text-xs border rounded-lg bg-white">
+                    <select class="ing-unit w-1/5 p-1.5 text-xs bg-white border rounded-lg">
+                        <option value="g" ${unit === 'g' ? 'selected' : ''}>g</option>
+                        <option value="pz" ${unit === 'pz' ? 'selected' : ''}>pz</option>
+                    </select>
+                    <button type="button" onclick="document.getElementById('row-${rowId}').remove()" class="text-rose-500 font-bold px-1.5">✕</button>
+                </div>
+            `;
+            container.insertAdjacentHTML('beforeend', rowHTML);
         }
 
         function openModal() {
             document.getElementById('edit-id').value = '';
             document.getElementById('item-form').reset();
+            document.getElementById('recipe-ingredients-container').innerHTML = '';
+            addRecipeRow();
             document.getElementById('modal-item').classList.remove('hidden');
         }
 
@@ -604,32 +541,30 @@
         function saveItem(e) {
             e.preventDefault();
             const id = document.getElementById('edit-id').value;
-            const price = parseFloat(document.getElementById('edit-price').value);
-            const cost = parseFloat(document.getElementById('edit-cost').value);
-            const margin = price - cost;
-            const fc_pct = parseFloat(((cost / price) * 100).toFixed(1));
+            const rows = document.querySelectorAll('#recipe-ingredients-container > div');
+            const recipe = [];
 
-            if(id) {
-                const item = menuData.find(i => i.id == id);
-                item.categoria = document.getElementById('edit-cat').value;
-                item.prodotto = document.getElementById('edit-name').value;
-                item.prezzo = price;
-                item.costo = cost;
-                item.margine = margin;
-                item.fc_pct = fc_pct;
-                item.volume = parseInt(document.getElementById('edit-vol').value);
+            rows.forEach(r => {
+                const ing = r.querySelector('.ing-select').value;
+                const qty = parseFloat(r.querySelector('.ing-qty').value) || 0;
+                const unit = r.querySelector('.ing-unit').value;
+                recipe.push({ ing, qty, unit });
+            });
+
+            const newItem = {
+                id: id ? parseInt(id) : menuData.length + 1,
+                categoria: document.getElementById('edit-cat').value,
+                prodotto: document.getElementById('edit-name').value,
+                prezzo: parseFloat(document.getElementById('edit-price').value),
+                volume: parseInt(document.getElementById('edit-vol').value),
+                recipe: recipe
+            };
+
+            if (id) {
+                const idx = menuData.findIndex(i => i.id == id);
+                menuData[idx] = newItem;
             } else {
-                menuData.push({
-                    id: menuData.length + 1,
-                    categoria: document.getElementById('edit-cat').value,
-                    prodotto: document.getElementById('edit-name').value,
-                    prezzo: price,
-                    costo: cost,
-                    margine: margin,
-                    fc_pct: fc_pct,
-                    volume: parseInt(document.getElementById('edit-vol').value),
-                    quadrante: 'STARS (Stelle)'
-                });
+                menuData.push(newItem);
             }
 
             closeModal();
@@ -638,21 +573,25 @@
         }
 
         function deleteItem(id) {
-            if(confirm('Vuoi eliminare questo prodotto dal menù?')) {
+            if (confirm('Vuoi eliminare questo prodotto dal menu?')) {
                 menuData = menuData.filter(i => i.id !== id);
                 renderAll();
             }
         }
 
         function exportCSV() {
-            let csv = 'ID;Categoria;Prodotto;Prezzo;FoodCost;Margine;FC_Pct;Volume;Quadrante\n';
+            let csv = 'ID;Categoria;Prodotto;Prezzo;FoodCost;Margine;FC_Pct;Volume;Ricetta\n';
             menuData.forEach(i => {
-                csv += `${i.id};${i.categoria};${i.prodotto};${i.prezzo};${i.costo};${i.margine};${i.fc_pct};${i.volume};${i.quadrante}\n`;
+                const cost = calculateProductCost(i);
+                const margin = i.prezzo - cost;
+                const fc = ((cost / i.prezzo) * 100).toFixed(1);
+                const rec = i.recipe.map(r => `${r.ing} (${r.qty}${r.unit})`).join(' + ');
+                csv += `${i.id};${i.categoria};${i.prodotto};${i.prezzo};${cost.toFixed(2)};${margin.toFixed(2)};${fc}%;${i.volume};"${rec}"\n`;
             });
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
-            link.download = 'Menu_FoodCost_The_Galleon.csv';
+            link.download = 'Menu_FoodCost_Galleon.csv';
             link.click();
         }
 

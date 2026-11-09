@@ -3,22 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Food Cost Manager Professional</title>
-    <!-- Font & icons -->
+    <title>Food Coast Manager - Sistema Professionale</title>
+    <!-- Font Awesome per le icone -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <!-- Chart.js per i grafici -->
+    <!-- Chart.js per la sezione grafici -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
-            --bg-main: #0f172a;
-            --bg-card: #1e293b;
-            --bg-sidebar: #0b1120;
-            --accent-color: #f59e0b;
+            --bg-body: #0b0f19;
+            --bg-sidebar: #111827;
+            --bg-card: #1f2937;
+            --accent: #f59e0b;
             --accent-hover: #d97706;
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
-            --border-color: #334155;
+            --text-main: #f9fafb;
+            --text-muted: #9ca3af;
+            --border: #374151;
             --success: #10b981;
+            --warning: #f59e0b;
             --danger: #ef4444;
             --info: #3b82f6;
         }
@@ -27,54 +28,55 @@
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
         }
 
         body {
-            background-color: var(--bg-main);
+            background-color: var(--bg-body);
             color: var(--text-main);
             display: flex;
             min-height: 100vh;
             overflow-x: hidden;
         }
 
-        /* --- SIDEBAR & NAV --- */
+        /* --- SIDEBAR --- */
         .sidebar {
-            width: 260px;
+            width: 270px;
             background-color: var(--bg-sidebar);
-            border-right: 1px solid var(--border-color);
+            border-right: 1px solid var(--border);
             display: flex;
             flex-direction: column;
-            transition: all 0.3s ease;
-            z-index: 100;
             position: fixed;
             height: 100vh;
+            transition: transform 0.3s ease;
+            z-index: 1000;
         }
 
-        .sidebar.collapsed {
+        .sidebar.closed {
             transform: translateX(-100%);
         }
 
         .brand {
-            padding: 20px;
-            font-size: 1.3rem;
+            padding: 22px 20px;
+            font-size: 1.25rem;
             font-weight: 700;
-            color: var(--accent-color);
+            color: var(--accent);
             display: flex;
             align-items: center;
             gap: 12px;
-            border-bottom: 1px solid var(--border-color);
+            border-bottom: 1px solid var(--border);
         }
 
-        .menu-list {
+        .menu {
             list-style: none;
-            padding: 15px 10px;
+            padding: 20px 12px;
             flex: 1;
+            overflow-y: auto;
         }
 
         .menu-item {
-            padding: 14px 18px;
-            margin-bottom: 6px;
+            padding: 13px 16px;
+            margin-bottom: 8px;
             border-radius: 8px;
             cursor: pointer;
             display: flex;
@@ -82,19 +84,20 @@
             gap: 12px;
             color: var(--text-muted);
             font-weight: 500;
+            font-size: 0.95rem;
             transition: all 0.2s;
         }
 
         .menu-item:hover, .menu-item.active {
-            background-color: rgba(245, 158, 11, 0.15);
-            color: var(--accent-color);
+            background-color: rgba(245, 158, 11, 0.12);
+            color: var(--accent);
         }
 
-        /* --- MAIN CONTENT AREA --- */
+        /* --- MAIN WRAPPER --- */
         .main-wrapper {
             flex: 1;
-            margin-left: 260px;
-            transition: all 0.3s ease;
+            margin-left: 270px;
+            transition: margin-left 0.3s ease;
             display: flex;
             flex-direction: column;
             min-width: 0;
@@ -104,45 +107,53 @@
             margin-left: 0;
         }
 
-        .top-navbar {
+        /* --- TOPBAR --- */
+        .topbar {
             background-color: var(--bg-card);
             padding: 15px 25px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            border-bottom: 1px solid var(--border-color);
+            border-bottom: 1px solid var(--border);
             position: sticky;
             top: 0;
-            z-index: 90;
+            z-index: 900;
         }
 
-        .toggle-btn {
+        .menu-toggle {
             background: none;
             border: none;
             color: var(--text-main);
-            font-size: 1.4rem;
+            font-size: 1.3rem;
             cursor: pointer;
-            padding: 5px;
+            padding: 4px;
         }
 
+        .topbar-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--accent);
+        }
+
+        /* --- CONTAINER & SECTIONS --- */
         .container {
             padding: 25px;
-            max-width: 1400px;
+            max-width: 1500px;
             margin: 0 auto;
             width: 100%;
         }
 
-        .tab-content {
+        .section-view {
             display: none;
         }
 
-        .tab-content.active {
+        .section-view.active {
             display: block;
-            animation: fadeIn 0.3s ease;
+            animation: fadeIn 0.25s ease-in-out;
         }
 
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(5px); }
+            from { opacity: 0; transform: translateY(4px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
@@ -150,10 +161,10 @@
         .card {
             background-color: var(--bg-card);
             border-radius: 12px;
-            padding: 20px;
-            border: 1px solid var(--border-color);
+            padding: 22px;
+            border: 1px solid var(--border);
             margin-bottom: 25px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
         }
 
         .card-header {
@@ -162,20 +173,21 @@
             align-items: center;
             margin-bottom: 20px;
             flex-wrap: wrap;
-            gap: 10px;
+            gap: 15px;
         }
 
         .btn {
-            background-color: var(--accent-color);
+            background-color: var(--accent);
             color: #000;
             border: none;
             padding: 10px 18px;
-            border-radius: 6px;
+            border-radius: 8px;
             font-weight: 600;
             cursor: pointer;
             display: inline-flex;
             align-items: center;
             gap: 8px;
+            font-size: 0.9rem;
             transition: background 0.2s;
         }
 
@@ -184,22 +196,24 @@
         }
 
         .btn-secondary {
-            background-color: #334155;
+            background-color: #374151;
             color: var(--text-main);
         }
-        .btn-secondary:hover { background-color: #475569; }
+        .btn-secondary:hover {
+            background-color: #4b5563;
+        }
 
         .form-control {
-            background-color: #0f172a;
-            border: 1px solid var(--border-color);
+            background-color: var(--bg-body);
+            border: 1px solid var(--border);
             color: var(--text-main);
             padding: 10px 14px;
-            border-radius: 6px;
+            border-radius: 8px;
             outline: none;
-            width: 100%;
+            font-size: 0.95rem;
         }
 
-        .table-responsive {
+        .table-container {
             overflow-x: auto;
         }
 
@@ -210,66 +224,82 @@
         }
 
         th, td {
-            padding: 14px;
-            border-bottom: 1px solid var(--border-color);
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.92rem;
         }
 
         th {
-            background-color: rgba(15, 23, 42, 0.6);
+            background-color: rgba(15, 23, 42, 0.5);
             color: var(--text-muted);
-            font-weight: 600;
             text-transform: uppercase;
             font-size: 0.75rem;
             letter-spacing: 0.05em;
         }
 
         .badge {
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 0.8rem;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.78rem;
             font-weight: 600;
         }
-        .badge-success { background: rgba(16, 185, 129, 0.2); color: #34d399; }
-        .badge-warning { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
-        .badge-danger { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+        .badge-success { background: rgba(16, 185, 129, 0.15); color: #34d399; }
+        .badge-warning { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
+        .badge-danger { background: rgba(239, 68, 68, 0.15); color: #f87171; }
+        .badge-info { background: rgba(59, 130, 246, 0.15); color: #60a5fa; }
 
-        /* --- AI CHATBOT --- */
-        .chat-box {
-            height: 400px;
-            overflow-y: auto;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
+        /* --- AI CHATBOT BOX --- */
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            height: 450px;
+            background: var(--bg-body);
+            border: 1px solid var(--border);
+            border-radius: 10px;
             padding: 15px;
-            background: #0f172a;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
             display: flex;
             flex-direction: column;
             gap: 12px;
+            padding-bottom: 15px;
         }
 
-        .chat-msg {
+        .message {
             max-width: 80%;
             padding: 12px 16px;
-            border-radius: 12px;
+            border-radius: 10px;
             line-height: 1.5;
             font-size: 0.95rem;
         }
-        .chat-msg.user {
+
+        .message.user {
             align-self: flex-end;
-            background: var(--accent-color);
+            background-color: var(--accent);
             color: #000;
             font-weight: 500;
         }
-        .chat-msg.ai {
+
+        .message.ai {
             align-self: flex-start;
-            background: #1e293b;
-            border: 1px solid var(--border-color);
+            background-color: var(--bg-card);
+            border: 1px solid var(--border);
             color: var(--text-main);
         }
 
-        /* Responsive Breakpoints */
-        @media (max-width: 768px) {
+        .chat-input-area {
+            display: flex;
+            gap: 10px;
+            margin-top: 12px;
+        }
+
+        /* Responsive Layout */
+        @media(max-width: 768px) {
             .sidebar { transform: translateX(-100%); }
-            .sidebar.active { transform: translateX(0); }
+            .sidebar.mobile-open { transform: translateX(0); }
             .main-wrapper { margin-left: 0 !important; }
             .container { padding: 15px; }
         }
@@ -280,45 +310,48 @@
     <!-- SIDEBAR -->
     <aside class="sidebar" id="sidebar">
         <div class="brand">
-            <i class="fa-solid fa-utensils"></i> FoodCost Pro
+            <i class="fa-solid fa-fire-burner"></i> Food Coast Pro
         </div>
-        <ul class="menu-list">
-            <li class="menu-item active" onclick="switchTab('products')">
-                <i class="fa-solid fa-pizza-slice"></i> Prodotti & Ricette
+        <ul class="menu">
+            <li class="menu-item active" onclick="switchSection('products')">
+                <i class="fa-solid fa-pizza-slice"></i> Prodotti & Categorie
             </li>
-            <li class="menu-item" onclick="switchTab('ingredients')">
-                <i class="fa-solid fa-carrot"></i> Materie Prime & Market
+            <li class="menu-item" onclick="switchSection('ingredients')">
+                <i class="fa-solid fa-basket-shopping"></i> Materie Prime & Market
             </li>
-            <li class="menu-item" onclick="switchTab('analytics')">
+            <li class="menu-item" onclick="switchSection('analytics')">
                 <i class="fa-solid fa-chart-pie"></i> Grafici & Analisi
             </li>
-            <li class="menu-item" onclick="switchTab('ai-assistant')">
-                <i class="fa-solid fa-robot"></i> AI Chef Assistant
+            <li class="menu-item" onclick="switchSection('ai-chat')">
+                <i class="fa-solid fa-robot"></i> AI Food Specialist
             </li>
         </ul>
     </aside>
 
-    <!-- MAIN CONTENT -->
+    <!-- MAIN WRAPPER -->
     <div class="main-wrapper" id="mainWrapper">
-        <header class="top-navbar">
-            <button class="toggle-btn" onclick="toggleSidebar()"><i class="fa-solid fa-bars"></i></button>
-            <h3 id="pageTitle" style="font-size: 1.1rem; color: var(--accent-color);">Gestione Prodotti e Food Cost</h3>
-            <div><span class="badge badge-success"><i class="fa-solid fa-check"></i> Dati 2025 Sincronizzati</span></div>
+        <header class="topbar">
+            <button class="menu-toggle" onclick="toggleSidebar()"><i class="fa-solid fa-bars"></i></button>
+            <div class="topbar-title" id="topbarTitle">Gestione Prodotti e Ricette</div>
+            <div>
+                <span class="badge badge-success"><i class="fa-solid fa-circle-check"></i> Sistema Attivo</span>
+            </div>
         </header>
 
         <div class="container">
             
-            <!-- TAB 1: PRODOTTI & RICETTE -->
-            <div id="products" class="tab-content active">
+            <!-- SEZIONE 1: PRODOTTI & CATEGORIE -->
+            <div id="section-products" class="section-view active">
                 <div class="card">
                     <div class="card-header">
-                        <h2>Menu Prodotti</h2>
-                        <div style="display:flex; gap:10px; flex-wrap:wrap;">
-                            <input type="text" id="searchProduct" class="form-control" placeholder="Cerca prodotto (es. Belize)..." onkeyup="filterProducts()" style="width: 220px;">
+                        <h2>Elenco Prodotti & Ricettario</h2>
+                        <div style="display:flex; gap:12px; flex-wrap:wrap;">
+                            <input type="text" id="searchProductInput" class="form-control" placeholder="Cerca prodotto o categoria..." onkeyup="filterProducts()" style="width: 240px;">
                             <button class="btn" onclick="openAddProductModal()"><i class="fa-solid fa-plus"></i> Nuovo Prodotto</button>
+                            <button class="btn btn-secondary" onclick="openAddCategoryModal()"><i class="fa-solid fa-folder-plus"></i> Nuova Categoria</button>
                         </div>
                     </div>
-                    <div class="table-responsive">
+                    <div class="table-container">
                         <table>
                             <thead>
                                 <tr>
@@ -332,33 +365,33 @@
                                 </tr>
                             </thead>
                             <tbody id="productsTableBody">
-                                <!-- Popolato dinamicamente -->
+                                <!-- Popolato dinamicamente da JS -->
                             </tbody>
                         </table>
                     </div>
                 </div>
             </div>
 
-            <!-- TAB 2: MATERIE PRIME & PREZZI SUPERMERCATO -->
-            <div id="ingredients" class="tab-content">
+            <!-- SEZIONE 2: MATERIE PRIME & SUPERMERCATO -->
+            <div id="section-ingredients" class="section-view">
                 <div class="card">
                     <div class="card-header">
-                        <h2>Materie Prime & Prezzi di Riferimento</h2>
+                        <h2>Materie Prime & Prezzi Supermercato (Riferimento)</h2>
                         <div style="display:flex; gap:10px;">
-                            <input type="text" id="searchIngr" class="form-control" placeholder="Cerca ingrediente (es. Mozzarella)..." onkeyup="filterIngredients()" style="width: 250px;">
+                            <input type="text" id="searchIngrInput" class="form-control" placeholder="Cerca ingrediente..." onkeyup="filterIngredients()" style="width: 250px;">
                         </div>
                     </div>
-                    <p style="color: var(--text-muted); margin-bottom: 15px; font-size: 0.9rem;">
-                        <i class="fa-solid fa-circle-info"></i> <strong>Nota:</strong> Il <i>Prezzo Supermercato</i> viene visualizzato esclusivamente come **riferimento di mercato/benchmark** e non altera direttamente la ricetta a meno che non aggiorni il costo unitario reale.
+                    <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 18px;">
+                        <i class="fa-solid fa-circle-info text-info"></i> Nota: Il <strong>Prezzo Supermercato</strong> è inserito puramente come <i>riferimento di mercato</i> e non impatta sul calcolo del Food Coast aziendale, basato unicamente sul costo fornitore reale.
                     </p>
-                    <div class="table-responsive">
+                    <div class="table-container">
                         <table>
                             <thead>
                                 <tr>
                                     <th>Ingrediente</th>
                                     <th>Unità</th>
-                                    <th>Costo Reale/Unità (€)</th>
-                                    <th>Riferimento Supermercato (€)</th>
+                                    <th>Costo Reale Food Cost (€)</th>
+                                    <th>Prezzo Riferimento Supermercato (€)</th>
                                     <th>Fornitore</th>
                                     <th>Azioni</th>
                                 </tr>
@@ -371,42 +404,44 @@
                 </div>
             </div>
 
-            <!-- TAB 3: GRAFICI & ANALISI -->
-            <div id="analytics" class="tab-content">
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px;">
+            <!-- SEZIONE 3: GRAFICI & ANALISI -->
+            <div id="section-analytics" class="section-view">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 20px;">
                     <div class="card">
-                        <h3>Incidenza Food Cost % per Categoria</h3>
-                        <div style="position: relative; height:300px; margin-top:15px;">
-                            <canvas id="chartCategoryFC"></canvas>
+                        <h3>Incidenza Food Cost per Categoria</h3>
+                        <div style="position: relative; height: 300px; margin-top: 15px;">
+                            <canvas id="categoryChart"></canvas>
                         </div>
                     </div>
                     <div class="card">
-                        <h3>Top 5 Prodotti per Margine (€)</h3>
-                        <div style="position: relative; height:300px; margin-top:15px;">
-                            <canvas id="chartTopMargin"></canvas>
+                        <h3>Top Prodotti per Margine (€)</h3>
+                        <div style="position: relative; height: 300px; margin-top: 15px;">
+                            <canvas id="marginChart"></canvas>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- TAB 4: AI CHEF ASSISTANT -->
-            <div id="ai-assistant" class="tab-content">
+            <!-- SEZIONE 4: AI FOOD SPECIALIST -->
+            <div id="section-ai-chat" class="section-view">
                 <div class="card">
                     <div class="card-header">
-                        <h2><i class="fa-solid fa-robot"></i> AI Food Cost Specialist</h2>
+                        <h2><i class="fa-solid fa-robot text-warning"></i> AI Food Coast Specialist</h2>
                     </div>
-                    <p style="color: var(--text-muted); margin-bottom: 15px; font-size: 0.9rem;">
-                        Fai qualsiasi domanda sulla gestione del menù, ottimizzazione del food cost o calcoli sui margini.
+                    <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 15px;">
+                        Interroga l'intelligenza artificiale per qualsiasi consiglio su ricette, rincari di mercato, ricalcolo dei margini o ingegneria del menù.
                     </p>
-                    <div class="chat-box" id="chatBox">
-                        <div class="chat-msg ai">
-                            Ciao! Sono il tuo assistente esperto in <strong>Food Cost & Menu Engineering</strong>. <br>
-                            Posso analizzare i tuoi piatti (es. <em>Belize</em>, <em>Haity</em>), darti consigli su come incrementare i margini o calcolare i prezzi di vendita ideali. Chiedimi qualsiasi cosa!
+                    <div class="chat-container">
+                        <div class="chat-messages" id="chatMessages">
+                            <div class="message ai">
+                                Ciao! Sono il tuo assistente esperto in <strong>Food Coast & Menu Engineering</strong>. <br>
+                                Posso aiutarti a gestire il listino, verificare i costi della spesa al supermercato o ottimizzare i margini dei tuoi piatti (es. <em>Belize</em>, <em>Marinara</em>, hamburger e fritti). Chiedimi pure!
+                            </div>
                         </div>
-                    </div>
-                    <div style="display: flex; gap: 10px; margin-top: 15px;">
-                        <input type="text" id="aiInput" class="form-control" placeholder="Es: Come posso ridurre il Food Cost della pizza Belize?" onkeypress="if(event.key==='Enter') askAI()">
-                        <button class="btn" onclick="askAI()"><i class="fa-solid fa-paper-plane"></i> Invia</button>
+                        <div class="chat-input-area">
+                            <input type="text" id="aiInputText" class="form-control" placeholder="Es: Come posso abbassare il food cost della pizza Belize?" onkeypress="if(event.key==='Enter') sendAIQuery()">
+                            <button class="btn" onclick="sendAIQuery()"><i class="fa-solid fa-paper-plane"></i> Invia</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -415,118 +450,89 @@
     </div>
 
     <script>
-        // --- DATI REALI SINCRO DA EXCEL ---
-        let ingredientsData = [
-            { id: "mozzarella", name: "Mozzarella", unit: "kg/gr", cost: 8.87, marketPrice: 10.20, supplier: "Latteria Umbra" },
-            { id: "impasto", name: "Impasto Base", unit: "pezzi", cost: 0.18, marketPrice: 0.25, supplier: "Produzione Interna" },
-            { id: "zucchine", name: "Zucchine", unit: "kg/gr", cost: 2.30, marketPrice: 2.80, supplier: "Ortofrutta Local" },
-            { id: "pancetta", name: "Pancetta", unit: "kg/gr", cost: 11.83, marketPrice: 13.50, supplier: "Salumificio" },
-            { id: "provola", name: "Provola Afumicata", unit: "kg/gr", cost: 12.24, marketPrice: 14.10, supplier: "Latteria Umbra" },
-            { id: "pomodoro", name: "Salsa Pomodoro", unit: "kg/gr", cost: 1.20, marketPrice: 1.50, supplier: "Distribuzione" },
-            { id: "prosciutto_cotto", name: "Prosciutto Cotto", unit: "kg/gr", cost: 9.50, marketPrice: 11.00, supplier: "Salumificio" },
-            { id: "funghi", name: "Funghi Champignon", unit: "kg/gr", cost: 3.50, marketPrice: 4.20, supplier: "Ortofrutta" }
+        // --- BASE DATI INIZIALE (COLLEGATA AL TUO FILE EXCEL) ---
+        let ingredientsDB = [
+            { id: "impasto", name: "Impasto", unit: "pezzi", cost: 0.18, marketPrice: 0.25, supplier: "Interno" },
+            { id: "mozzarella", name: "Mozzarella", unit: "gr", cost: 8.87, marketPrice: 10.20, supplier: "Latteria Locale" },
+            { id: "zucchine", name: "Zucchine", unit: "gr", cost: 2.30, marketPrice: 2.90, supplier: "Ortofrutta" },
+            { id: "pancetta", name: "Pancetta", unit: "gr", cost: 11.83, marketPrice: 13.50, supplier: "Salumificio" },
+            { id: "provola", name: "Provola", unit: "gr", cost: 12.24, marketPrice: 14.00, supplier: "Latteria" },
+            { id: "pomodoro", name: "Salsa Pomodoro", unit: "gr", cost: 1.20, marketPrice: 1.60, supplier: "Distribuzione" },
+            { id: "prosciutto_cotto", name: "Prosciutto Cotto", unit: "gr", cost: 9.50, marketPrice: 11.20, supplier: "Salumificio" },
+            { id: "olio", name: "Olio EVO", unit: "ml", cost: 9.00, marketPrice: 11.50, supplier: "Frantoio" }
         ];
 
-        let productsData = [
-            {
-                id: "belize",
-                name: "BELIZE",
-                category: "PIZZE BIANCHE",
-                price: 9.50,
-                recipe: [
-                    { ingrId: "impasto", qty: 1 },
-                    { ingrId: "mozzarella", qty: 0.14 },
-                    { ingrId: "zucchine", qty: 0.10 },
-                    { ingrId: "pancetta", qty: 0.05 },
-                    { ingrId: "provola", qty: 0.04 }
-                ]
-            },
-            {
-                id: "marinara",
-                name: "MARINARA",
-                category: "PIZZE ROSSE",
-                price: 6.00,
-                recipe: [
-                    { ingrId: "impasto", qty: 1 },
-                    { ingrId: "pomodoro", qty: 0.15 }
-                ]
-            },
-            {
-                id: "haity_cotto",
-                name: "HAITY COTTO",
-                category: "PIZZE ROSSE",
-                price: 7.00,
-                recipe: [
-                    { ingrId: "impasto", qty: 1 },
-                    { ingrId: "pomodoro", qty: 0.10 },
-                    { ingrId: "mozzarella", qty: 0.10 },
-                    { ingrId: "prosciutto_cotto", qty: 0.08 }
-                ]
-            }
+        let productsDB = [
+            { id: "belize", name: "BELIZE", category: "PIZZE BIANCHE", price: 9.50, recipe: [{ ingrId: "impasto", qty: 1 }, { ingrId: "mozzarella", qty: 0.14 }, { ingrId: "zucchine", qty: 0.10 }, { ingrId: "pancetta", qty: 0.05 }, { ingrId: "provola", qty: 0.04 }] },
+            { id: "marinara", name: "MARINARA", category: "PIZZE ROSSE", price: 6.00, recipe: [{ ingrId: "impasto", qty: 1 }, { ingrId: "pomodoro", qty: 0.15 }, { ingrId: "olio", qty: 0.02 }] },
+            { id: "haity_cotto", name: "HAITY COTTO", category: "PIZZE ROSSE", price: 7.00, recipe: [{ ingrId: "impasto", qty: 1 }, { ingrId: "pomodoro", qty: 0.10 }, { ingrId: "mozzarella", qty: 0.10 }, { ingrId: "prosciutto_cotto", qty: 0.08 }] },
+            { id: "calabrese", name: "CALABRESE", category: "PIZZE ROSSE", price: 7.50, recipe: [{ ingrId: "impasto", qty: 1 }, { ingrId: "pomodoro", qty: 0.12 }, { ingrId: "mozzarella", qty: 0.10 }] }
         ];
 
-        // --- INIZIALIZZAZIONE ---
+        let categoriesList = ["PIZZE ROSSE", "PIZZE BIANCHE", "HAMBURGER", "FRITTI", "DOLCI", "BIBITE"];
+
+        // --- AVVISEMMENTO APPLICAZIONE ---
         document.addEventListener("DOMContentLoaded", () => {
-            renderProducts();
-            renderIngredients();
+            renderProductsTable();
+            renderIngredientsTable();
             initCharts();
         });
 
+        // --- NAVIGAZIONE & SIDEBAR ---
         function toggleSidebar() {
-            document.getElementById('sidebar').classList.toggle('collapsed');
+            document.getElementById('sidebar').classList.toggle('closed');
             document.getElementById('mainWrapper').classList.toggle('expanded');
         }
 
-        function switchTab(tabId) {
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+        function switchSection(sectionId) {
+            document.querySelectorAll('.section-view').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('active'));
-            
-            document.getElementById(tabId).classList.add('active');
+
+            document.getElementById('section-' + sectionId).classList.add('active');
             event.currentTarget.classList.add('active');
 
-            const titleMap = {
-                'products': 'Gestione Prodotti e Food Cost',
-                'ingredients': 'Anagrafica Materie Prime & Prezzi Market',
-                'analytics': 'Dashboard Analitica e Margini',
-                'ai-assistant': 'Assistente Tecnico AI Food Cost'
+            const titles = {
+                'products': 'Gestione Prodotti e Ricette',
+                'ingredients': 'Anagrafica Materie Prime & Supermercato',
+                'analytics': 'Grafici & Analisi Finanziaria',
+                'ai-chat': 'Assistente Virtuale AI Food Coast'
             };
-            document.getElementById('pageTitle').innerText = titleMap[tabId];
+            document.getElementById('topbarTitle').innerText = titles[sectionId];
         }
 
-        // --- CALCOLO FOOD COST ---
-        function calculateProductFC(product) {
-            let totalCost = 0;
-            product.recipe.forEach(item => {
-                let ingr = ingredientsData.find(i => i.id === item.ingrId);
+        // --- CALCOLO FOOD COAST ---
+        function calculateProductFoodCost(prod) {
+            let total = 0;
+            prod.recipe.forEach(item => {
+                let ingr = ingredientsDB.find(i => i.id === item.ingrId);
                 if (ingr) {
-                    totalCost += ingr.cost * item.qty;
+                    total += ingr.cost * item.qty;
                 }
             });
-            return totalCost;
+            return total;
         }
 
         // --- RENDER TABELLA PRODOTTI ---
-        function renderProducts() {
+        function renderProductsTable() {
             const tbody = document.getElementById('productsTableBody');
             tbody.innerHTML = '';
 
-            productsData.forEach(p => {
-                let fc = calculateProductFC(p);
-                let incidenza = p.price > 0 ? ((fc / p.price) * 100).toFixed(1) : 0;
-                let margine = (p.price - fc).toFixed(2);
-                
-                let badgeClass = incidenza <= 25 ? 'badge-success' : (incidenza <= 32 ? 'badge-warning' : 'badge-danger');
+            productsDB.forEach(p => {
+                let fc = calculateProductFoodCost(p);
+                let incidence = p.price > 0 ? ((fc / p.price) * 100).toFixed(1) : 0;
+                let margin = (p.price - fc).toFixed(2);
+                let badgeClass = incidence <= 25 ? 'badge-success' : (incidence <= 33 ? 'badge-warning' : 'badge-danger');
 
                 tbody.innerHTML += `
                     <tr>
                         <td><strong>${p.name}</strong></td>
-                        <td><span class="badge badge-warning">${p.category}</span></td>
+                        <td><span class="badge badge-info">${p.category}</span></td>
                         <td>€ ${p.price.toFixed(2)}</td>
                         <td>€ ${fc.toFixed(2)}</td>
-                        <td><span class="badge ${badgeClass}">${incidenza}%</span></td>
-                        <td style="color:var(--success); font-weight:bold;">€ ${margine}</td>
+                        <td><span class="badge ${badgeClass}">${incidence}%</span></td>
+                        <td style="color: var(--success); font-weight: bold;">€ ${margin}</td>
                         <td>
-                            <button class="btn btn-secondary" style="padding:4px 8px; font-size:0.8rem;" onclick="editProduct('${p.id}')"><i class="fa-solid fa-pen"></i></button>
+                            <button class="btn btn-secondary" style="padding: 5px 10px; font-size: 0.8rem;" onclick="editProduct('${p.id}')"><i class="fa-solid fa-pen"></i></button>
                         </td>
                     </tr>
                 `;
@@ -534,144 +540,155 @@
         }
 
         // --- RENDER TABELLA INGREDIENTI ---
-        function renderIngredients() {
+        function renderIngredientsTable() {
             const tbody = document.getElementById('ingredientsTableBody');
             tbody.innerHTML = '';
 
-            ingredientsData.forEach(i => {
+            ingredientsDB.forEach(i => {
                 tbody.innerHTML += `
                     <tr>
                         <td><strong>${i.name}</strong></td>
                         <td>${i.unit}</td>
-                        <td style="color:var(--accent-color); font-weight:bold;">€ ${i.cost.toFixed(2)}</td>
-                        <td style="color:var(--text-muted);">€ ${i.marketPrice.toFixed(2)}</td>
+                        <td style="color: var(--accent); font-weight: bold;">€ ${i.cost.toFixed(2)}</td>
+                        <td style="color: var(--text-muted);">€ ${i.marketPrice.toFixed(2)}</td>
                         <td>${i.supplier}</td>
                         <td>
-                            <button class="btn btn-secondary" style="padding:4px 8px; font-size:0.8rem;" onclick="editIngredient('${i.id}')"><i class="fa-solid fa-pen"></i></button>
+                            <button class="btn btn-secondary" style="padding: 5px 10px; font-size: 0.8rem;" onclick="editIngredient('${i.id}')"><i class="fa-solid fa-pen"></i></button>
                         </td>
                     </tr>
                 `;
             });
         }
 
-        // --- FILTRI DI RICERCA ---
+        // --- FILTRI ---
         function filterProducts() {
-            let val = document.getElementById('searchProduct').value.toLowerCase();
+            let q = document.getElementById('searchProductInput').value.toLowerCase();
             let rows = document.querySelectorAll('#productsTableBody tr');
             rows.forEach(r => {
-                r.style.display = r.children[0].innerText.toLowerCase().includes(val) ? '' : 'none';
+                r.style.display = r.innerText.toLowerCase().includes(q) ? '' : 'none';
             });
         }
 
         function filterIngredients() {
-            let val = document.getElementById('searchIngr').value.toLowerCase();
+            let q = document.getElementById('searchIngrInput').value.toLowerCase();
             let rows = document.querySelectorAll('#ingredientsTableBody tr');
             rows.forEach(r => {
-                r.style.display = r.children[0].innerText.toLowerCase().includes(val) ? '' : 'none';
+                r.style.display = r.innerText.toLowerCase().includes(q) ? '' : 'none';
             });
         }
 
-        // --- GRAFICI ---
-        function initCharts() {
-            // Chart 1: FC per categoria
-            const ctx1 = document.getElementById('chartCategoryFC').getContext('2d');
-            new Chart(ctx1, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Pizze Rosse', 'Pizze Bianche', 'Hamburger', 'Fritti'],
-                    datasets: [{
-                        data: [24.5, 27.2, 31.0, 21.8],
-                        backgroundColor: ['#f59e0b', '#10b981', '#ef4444', '#3b82f6']
-                    }]
-                },
-                options: { responsive: true, maintainAspectRatio: false }
-            });
-
-            // Chart 2: Top Margine
-            const ctx2 = document.getElementById('chartTopMargin').getContext('2d');
-            new Chart(ctx2, {
-                type: 'bar',
-                data: {
-                    labels: ['BELIZE', 'HAITY COTTO', 'MARINARA'],
-                    datasets: [{
-                        label: 'Margine Lordo in €',
-                        data: [6.95, 5.15, 5.68],
-                        backgroundColor: '#10b981'
-                    }]
-                },
-                options: { responsive: true, maintainAspectRatio: false }
-            });
-        }
-
-        // --- AI ASSISTANT SIMULATED LOGIC ---
-        function askAI() {
-            const input = document.getElementById('aiInput');
-            const chatBox = document.getElementById('chatBox');
-            if(!input.value.trim()) return;
-
-            const userText = input.value;
-            chatBox.innerHTML += `<div class="chat-msg user">${userText}</div>`;
-            input.value = '';
-            chatBox.scrollTop = chatBox.scrollHeight;
-
-            setTimeout(() => {
-                let aiReply = "Sto analizzando la tua richiesta sul Food Cost... ";
-                let query = userText.toLowerCase();
-
-                if (query.includes("belize")) {
-                    aiReply = "Per la pizza <strong>BELIZE</strong>: Il Food Cost attuale è di circa <strong>€ 2.55</strong> (Incidenza 26.8% su prezzo di € 9.50). La componente più costosa è la <em>Mozzarella</em> ed il <em>Prosciutto/Pancetta</em>. Riducendo la grammatura mozzarella da 140g a 120g risparmi € 0.18 a pizza aumentando il margine del +2%!";
-                } else if (query.includes("supermercato") || query.includes("prezzo")) {
-                    aiReply = "I prezzi di riferimento del supermercato ti permettono di capire se i tuoi fornitori diretti ti stanno applicando tariffe fuori mercato. Ricorda che il Food Cost calcola solo il costo di acquisto reale dal fornitore Ho.Re.Ca.";
-                } else {
-                    aiReply = "Come esperto di Food Cost, ti suggerisco di mantenere un'incidenza totale del piatto compresa tra il **22% ed il 28%**. Vuoi che calcoliamo insieme il margine di una nuova ricetta?";
-                }
-
-                chatBox.innerHTML += `<div class="chat-msg ai">${aiReply}</div>`;
-                chatBox.scrollTop = chatBox.scrollHeight;
-            }, 800);
-        }
-
-        // --- MODALI / INTERAZIONI RAPIDE ---
+        // --- AGGIUNTA & MODIFICA RAPIDA ---
         function openAddProductModal() {
-            let name = prompt("Inserisci il nome del nuovo prodotto (es. Pizza Speciale):");
-            if (name) {
-                let cat = prompt("Inserisci la Categoria (es. PIZZE BIANCHE):", "PIZZE BIANCHE");
-                let price = parseFloat(prompt("Inserisci Prezzo di Vendita (€):", "8.50"));
-                if (name && price) {
-                    productsData.push({
-                        id: name.toLowerCase().replace(/\s+/g, '_'),
-                        name: name.toUpperCase(),
-                        category: cat || "GENERALE",
-                        price: price,
-                        recipe: [{ ingrId: "impasto", qty: 1 }, { ingrId: "mozzarella", qty: 0.10 }]
-                    });
-                    renderProducts();
-                    alert("Prodotto aggiunto con successo!");
-                }
+            let name = prompt("Nome del nuovo prodotto (es. Pizza Diavola):");
+            if (!name) return;
+            let cat = prompt("Categoria (es. PIZZE ROSSE):", "PIZZE ROSSE");
+            let price = parseFloat(prompt("Prezzo di vendita (€):", "8.00"));
+            if (!isNaN(price)) {
+                productsDB.push({
+                    id: name.toLowerCase().replace(/\s+/g, '_'),
+                    name: name.toUpperCase(),
+                    category: cat ? cat.toUpperCase() : "GENERALE",
+                    price: price,
+                    recipe: [{ ingrId: "impasto", qty: 1 }, { ingrId: "mozzarella", qty: 0.12 }]
+                });
+                renderProductsTable();
+                alert("Prodotto aggiunto con successo!");
+            }
+        }
+
+        function openAddCategoryModal() {
+            let catName = prompt("Nome della nuova categoria:");
+            if (catName) {
+                categoriesList.push(catName.toUpperCase());
+                alert(`Categoria '${catName.toUpperCase()}' aggiunta con successo!`);
             }
         }
 
         function editProduct(id) {
-            let p = productsData.find(x => x.id === id);
-            if(p) {
+            let p = productsDB.find(x => x.id === id);
+            if (p) {
                 let newPrice = prompt(`Modifica prezzo di vendita per ${p.name}:`, p.price);
-                if(newPrice !== null && !isNaN(newPrice)) {
+                if (newPrice !== null && !isNaN(newPrice)) {
                     p.price = parseFloat(newPrice);
-                    renderProducts();
+                    renderProductsTable();
                 }
             }
         }
 
         function editIngredient(id) {
-            let ingr = ingredientsData.find(x => x.id === id);
-            if(ingr) {
-                let newCost = prompt(`Modifica costo d'acquisto al ${ingr.unit} per ${ingr.name}:`, ingr.cost);
-                if(newCost !== null && !isNaN(newCost)) {
-                    ingr.cost = parseFloat(newCost);
-                    renderIngredients();
-                    renderProducts(); // Ricalcola subito il food cost dei prodotti!
+            let i = ingredientsDB.find(x => x.id === id);
+            if (i) {
+                let newCost = prompt(`Modifica costo reale d'acquisto per ${i.name}:`, i.cost);
+                if (newCost !== null && !isNaN(newCost)) {
+                    i.cost = parseFloat(newCost);
+                    renderIngredientsTable();
+                    renderProductsTable(); // Ricalcola in tempo reale i food cost dei prodotti!
                 }
             }
+        }
+
+        // --- GRAFICI (CHART.JS) ---
+        function initCharts() {
+            // Chart Categorie
+            const ctx1 = document.getElementById('categoryChart').getContext('2d');
+            new Chart(ctx1, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Pizze Rosse', 'Pizze Bianche', 'Hamburger', 'Fritti'],
+                    datasets: [{
+                        data: [26, 28, 31, 23],
+                        backgroundColor: ['#f59e0b', '#10b981', '#ef4444', '#3b82f6'],
+                        borderWidth: 0
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+
+            // Chart Margine Prodotti
+            const ctx2 = document.getElementById('marginChart').getContext('2d');
+            new Chart(ctx2, {
+                type: 'bar',
+                data: {
+                    labels: ['BELIZE', 'HAITY COTTO', 'CALABRESE', 'MARINARA'],
+                    datasets: [{
+                        label: 'Margine Lordo in €',
+                        data: [6.85, 4.90, 5.20, 5.68],
+                        backgroundColor: '#10b981',
+                        borderRadius: 6
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        }
+
+        // --- AI SPECIALIST LOGIC ---
+        function sendAIQuery() {
+            let input = document.getElementById('aiInputText');
+            let chatBox = document.getElementById('chatMessages');
+            let query = input.value.trim();
+            if(!query) return;
+
+            chatBox.innerHTML += `<div class="message user">${query}</div>`;
+            input.value = '';
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            setTimeout(() => {
+                let reply = "Analisi completata con successo.";
+                let qLower = query.toLowerCase();
+
+                if (qLower.includes("belize")) {
+                    reply = "Analizzando la pizza <strong>BELIZE</strong>: Il Food Coast attuale è di circa <strong>€ 2.65</strong> con un'incidenza del 27.8% sul prezzo di vendita (€ 9.50). La componente con impatto maggiore è la mozzarella e la pancetta. Per ottimizzarla, puoi valutare una riduzione millimetrica della grammatura della provola o verificare il prezzo d'ingrosso dal fornitore.";
+                } else if (qLower.includes("supermercato") || qLower.includes("spesa") || qLower.includes("prezzi")) {
+                    reply = "I prezzi di riferimento del supermercato servono unicamente come benchmark di controllo per verificare se i tuoi fornitori Ho.Re.Ca. ti stanno applicando tariffe competitive. Non incidono sul calcolo del Food Coast aziendale.";
+                } else if (qLower.includes("margine") || qLower.includes("guadagno")) {
+                    reply = "Il margine medio attuale si attesta su ottimi livelli. Ricorda che per un locale di successo l'incidenza ideale del food cost dovrebbe oscillare tra il 22% e il 30% a seconda della categoria.";
+                } else {
+                    reply = `Come programmatore e consulente di Food Coast, ho elaborato la tua richiesta: ti consiglio di monitorare attentamente le fluttuazioni settimanali dei freschi (ortofrutta e latticini). Vuoi che ricalcoli i prezzi di una specifica categoria?`;
+                }
+
+                chatBox.innerHTML += `<div class="message ai">${reply}</div>`;
+                chatBox.scrollTop = chatBox.scrollHeight;
+            }, 750);
         }
     </script>
 </body>

@@ -3,599 +3,610 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Galleon - Food Cost & Gestione Ingredienti</title>
+    <title>The Galleon - Menu & Food Cost Manager</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; }
-        .card-shadow { box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05); }
-        .sidebar-overlay { transition: opacity 0.3s ease-in-out; }
-        .sidebar-content { transition: transform 0.3s ease-in-out; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #1f2937; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 3px; }
     </style>
 </head>
-<body class="text-slate-800 antialiased min-h-screen">
+<body class="bg-gray-950 text-gray-100 font-sans antialiased min-h-screen flex flex-col">
 
-    <!-- Header Navbar -->
-    <header class="bg-slate-900 text-white sticky top-0 z-40 shadow-lg">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-amber-500 flex items-center justify-center text-slate-950 font-black text-xl shadow-md">
-                    ⛵
-                </div>
-                <div>
-                    <h1 class="font-extrabold text-lg tracking-tight leading-none text-white">The Galleon Pizzeria</h1>
-                    <p class="text-xs text-amber-400 font-medium">Food Cost Interattivo</p>
-                </div>
+    <!-- HEADER -->
+    <header class="bg-gray-900 border-b border-gray-800 sticky top-0 z-40 px-4 py-3 flex items-center justify-between shadow-md">
+        <div class="flex items-center space-x-3">
+            <button id="sidebarToggle" class="bg-amber-600 hover:bg-amber-500 text-white px-3 py-2 rounded-lg text-sm font-bold transition flex items-center gap-2 shadow">
+                <i class="fa-solid fa-boxes-stacked"></i> <span class="hidden sm:inline">Ingredienti Base & Prezzi</span><span class="sm:hidden">Ingredienti</span>
+            </button>
+            <div>
+                <h1 class="text-lg sm:text-xl font-black tracking-wider text-amber-500 flex items-center gap-2">
+                    <i class="fa-solid fa-anchor"></i> THE GALLEON
+                </h1>
+                <p class="text-xs text-gray-400 hidden sm:block">Gestione Menu & Food Cost in Tempo Reale</p>
             </div>
-            <div class="flex items-center gap-2">
-                <button onclick="toggleSidebar(true)" class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold flex items-center gap-2 transition shadow">
-                    <i class="fa-solid fa-boxes-packing"></i> Ingredienti & Prezzi
-                </button>
-                <button onclick="exportCSV()" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center gap-2 transition shadow">
-                    <i class="fa-solid fa-file-excel"></i> Esporta
-                </button>
-                <button onclick="openModal()" class="px-3.5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl text-xs font-extrabold flex items-center gap-2 transition shadow">
-                    <i class="fa-solid fa-plus"></i> Nuovo Prodotto
-                </button>
-            </div>
+        </div>
+        <div class="flex items-center space-x-2">
+            <button onclick="exportData()" class="bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs px-3 py-2 rounded-lg border border-gray-700 transition" title="Esporta JSON">
+                <i class="fa-solid fa-download"></i> <span class="hidden md:inline">Esporta</span>
+            </button>
+            <button onclick="resetData()" class="bg-red-950/60 hover:bg-red-900 text-red-300 text-xs px-3 py-2 rounded-lg border border-red-800/50 transition" title="Ripristina originali">
+                <i class="fa-solid fa-rotate-left"></i> <span class="hidden md:inline">Reset</span>
+            </button>
         </div>
     </header>
 
-    <!-- Sidebar Ingredienti -->
-    <div id="sidebar-bg" onclick="toggleSidebar(false)" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden opacity-0 sidebar-overlay"></div>
-    <aside id="sidebar-panel" class="fixed top-0 right-0 h-full w-full sm:w-96 bg-white z-50 shadow-2xl transform translate-x-full sidebar-content flex flex-col">
-        <div class="p-4 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800">
-            <div class="flex items-center gap-2">
-                <span class="text-xl">🧀</span>
-                <h3 class="font-bold text-base">Anagrafica Ingredienti</h3>
-            </div>
-            <button onclick="toggleSidebar(false)" class="text-slate-400 hover:text-white text-lg font-bold">✕</button>
-        </div>
-        <div class="p-3 bg-amber-50 border-b border-amber-200 text-xs text-amber-900 flex items-center gap-2">
-            <i class="fa-solid fa-circle-info text-amber-600 text-sm"></i>
-            <span>Modifica il prezzo al Kg/L di un ingrediente per aggiornare <b>tutti i prodotti</b> in tempo reale.</span>
-        </div>
-        <div id="ingredients-list" class="flex-1 overflow-y-auto p-4 space-y-3">
-            <!-- Dynamic Ingredients List -->
-        </div>
-        <div class="p-4 border-t border-slate-100 bg-slate-50">
-            <button onclick="addNewIngredient()" class="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow">
-                <i class="fa-solid fa-plus"></i> Aggiungi Nuovo Ingrediente
-            </button>
-        </div>
-    </aside>
+    <div class="flex-1 flex overflow-hidden relative">
 
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-
-        <!-- KPI Summary Cards -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div class="bg-white p-5 rounded-2xl border border-slate-200 card-shadow flex items-center gap-4">
-                <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl">🍕</div>
-                <div>
-                    <p class="text-xs font-bold uppercase text-slate-400">Totale Prodotti</p>
-                    <h3 id="kpi-total-items" class="text-2xl font-black text-slate-900">0</h3>
-                </div>
-            </div>
-            <div class="bg-white p-5 rounded-2xl border border-slate-200 card-shadow flex items-center gap-4">
-                <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl">💶</div>
-                <div>
-                    <p class="text-xs font-bold uppercase text-slate-400">Prezzo Medio</p>
-                    <h3 id="kpi-avg-price" class="text-2xl font-black text-slate-900">€ 0.00</h3>
-                </div>
-            </div>
-            <div class="bg-white p-5 rounded-2xl border border-slate-200 card-shadow flex items-center gap-4">
-                <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-xl">📊</div>
-                <div>
-                    <p class="text-xs font-bold uppercase text-slate-400">Food Cost Medio %</p>
-                    <h3 id="kpi-avg-fc" class="text-2xl font-black text-slate-900">0.0%</h3>
-                </div>
-            </div>
-            <div class="bg-white p-5 rounded-2xl border border-slate-200 card-shadow flex items-center gap-4">
-                <div class="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl">💰</div>
-                <div>
-                    <p class="text-xs font-bold uppercase text-slate-400">Margine Medio</p>
-                    <h3 id="kpi-avg-margin" class="text-2xl font-black text-slate-900">€ 0.00</h3>
-                </div>
-            </div>
-        </div>
-
-        <!-- Filter & View Controls -->
-        <div class="flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-slate-200 pb-4">
-            <div class="flex items-center gap-2 bg-slate-200 p-1 rounded-xl">
-                <button id="btn-view-visual" onclick="switchView('visual')" class="px-4 py-2 rounded-lg text-xs font-bold bg-white text-slate-900 shadow">
-                    ⭐ Matrice Visiva
-                </button>
-                <button id="btn-view-table" onclick="switchView('table')" class="px-4 py-2 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900">
-                    📋 Tabella Prodotti
+        <!-- SIDEBAR INGREDIENTI (DRAWER RESPONSIVE) -->
+        <aside id="ingredientsSidebar" class="absolute inset-y-0 left-0 z-30 w-80 bg-gray-900 border-r border-gray-800 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out flex flex-col shadow-2xl">
+            <div class="p-4 border-b border-gray-800 flex items-center justify-between bg-gray-950">
+                <h2 class="font-bold text-amber-400 text-sm flex items-center gap-2">
+                    <i class="fa-solid fa-list-check"></i> Listino Ingredienti Base
+                </h2>
+                <button id="sidebarClose" class="lg:hidden text-gray-400 hover:text-white p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
                 </button>
             </div>
-            <div class="flex items-center gap-3 w-full sm:w-auto">
-                <div class="relative w-full sm:w-64">
-                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
-                    <input type="text" id="search-input" oninput="renderAll()" placeholder="Cerca prodotto o ingrediente..." class="w-full pl-9 pr-4 py-2 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500">
-                </div>
-                <select id="cat-filter" onchange="renderAll()" class="py-2 px-3 text-xs bg-white border border-slate-200 rounded-xl font-semibold focus:outline-none">
-                    <option value="ALL">Tutte le Categorie</option>
-                </select>
+            <div class="p-3 border-b border-gray-800 bg-gray-900/50">
+                <input type="text" id="searchIngredient" placeholder="Cerca ingrediente..." class="w-full bg-gray-950 border border-gray-700 rounded-lg px-3 py-1.5 text-xs text-gray-200 focus:outline-none focus:border-amber-500">
             </div>
-        </div>
-
-        <!-- Matrice Visiva -->
-        <div id="view-visual" class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div class="bg-emerald-50/70 border-2 border-emerald-300 rounded-3xl p-6 space-y-4">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-3">
-                        <span class="text-3xl">⭐</span>
-                        <div>
-                            <h2 class="text-lg font-black text-emerald-950">LE STELLE</h2>
-                            <p class="text-xs text-emerald-700">Tanti Guadagni + Tante Vendite</p>
-                        </div>
-                    </div>
-                    <span id="badge-stars" class="px-3 py-1 bg-emerald-600 text-white rounded-full text-xs font-extrabold">0</span>
-                </div>
-                <div id="list-stars" class="space-y-2 max-h-[450px] overflow-y-auto pr-1"></div>
+            <div id="ingredientsListContainer" class="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-3">
+                <!-- Popolato via JS -->
             </div>
-
-            <div class="bg-sky-50/70 border-2 border-sky-300 rounded-3xl p-6 space-y-4">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-3">
-                        <span class="text-3xl">🐎</span>
-                        <div>
-                            <h2 class="text-lg font-black text-sky-950">CAVALLI DI BATTAGLIA</h2>
-                            <p class="text-xs text-sky-700">Tante Vendite, Ma Poco Guadagno</p>
-                        </div>
-                    </div>
-                    <span id="badge-plowhorses" class="px-3 py-1 bg-sky-600 text-white rounded-full text-xs font-extrabold">0</span>
-                </div>
-                <div id="list-plowhorses" class="space-y-2 max-h-[450px] overflow-y-auto pr-1"></div>
+            <div class="p-3 border-t border-gray-800 bg-gray-950 text-xs text-gray-400 text-center">
+                Modifica i prezzi al kg/pz per aggiornare istantaneamente il Food Cost.
             </div>
+        </aside>
 
-            <div class="bg-amber-50/70 border-2 border-amber-300 rounded-3xl p-6 space-y-4">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-3">
-                        <span class="text-3xl">🧩</span>
-                        <div>
-                            <h2 class="text-lg font-black text-amber-950">GLI ENIGMI</h2>
-                            <p class="text-xs text-amber-800">Alto Guadagno, Ma Poche Vendite</p>
-                        </div>
+        <!-- OVERLAY MOBILE -->
+        <div id="sidebarOverlay" class="fixed inset-0 bg-black/60 z-20 hidden lg:hidden"></div>
+
+        <!-- MAIN CONTENT: MENU COMPLETO -->
+        <main class="flex-1 overflow-y-auto custom-scrollbar p-4 sm:p-6 lg:p-8 bg-gray-950">
+            <div class="max-w-7xl mx-auto space-y-8">
+
+                <!-- BARRA DI RICERCA PRODOTTI E FILTRI -->
+                <div class="bg-gray-900 p-4 rounded-xl border border-gray-800 shadow flex flex-col sm:flex-row gap-4 items-center justify-between">
+                    <div class="w-full sm:w-96 relative">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-gray-500 text-xs"></i>
+                        <input type="text" id="searchProduct" placeholder="Cerca piatto, ingrediente, prezzo..." class="w-full bg-gray-950 border border-gray-700 rounded-lg pl-9 pr-4 py-2 text-sm text-gray-200 focus:outline-none focus:border-amber-500">
                     </div>
-                    <span id="badge-puzzles" class="px-3 py-1 bg-amber-600 text-white rounded-full text-xs font-extrabold">0</span>
+                    <div class="flex items-center gap-2 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0" id="categoryFilters">
+                        <button onclick="filterCategory('ALL')" class="cat-btn active bg-amber-600 text-white text-xs font-semibold px-3 py-1.5 rounded-lg whitespace-nowrap transition">Tutti</button>
+                        <button onclick="filterCategory('ANTIPASTI')" class="cat-btn bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs font-semibold px-3 py-1.5 rounded-lg whitespace-nowrap transition">Antipasti</button>
+                        <button onclick="filterCategory('TORTE')" class="cat-btn bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs font-semibold px-3 py-1.5 rounded-lg whitespace-nowrap transition">Torte al Testo</button>
+                        <button onclick="filterCategory('PALA')" class="cat-btn bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs font-semibold px-3 py-1.5 rounded-lg whitespace-nowrap transition">Pala</button>
+                        <button onclick="filterCategory('ROSSE')" class="cat-btn bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs font-semibold px-3 py-1.5 rounded-lg whitespace-nowrap transition">Pizze Rosse</button>
+                        <button onclick="filterCategory('BIANCHE')" class="cat-btn bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs font-semibold px-3 py-1.5 rounded-lg whitespace-nowrap transition">Pizze Bianche</button>
+                        <button onclick="filterCategory('HAMBURGER')" class="cat-btn bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs font-semibold px-3 py-1.5 rounded-lg whitespace-nowrap transition">Hamburger</button>
+                        <button onclick="filterCategory('TAGLIERI')" class="cat-btn bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs font-semibold px-3 py-1.5 rounded-lg whitespace-nowrap transition">Taglieri</button>
+                        <button onclick="filterCategory('PANINI')" class="cat-btn bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs font-semibold px-3 py-1.5 rounded-lg whitespace-nowrap transition">Panini</button>
+                        <button onclick="filterCategory('PIADINE')" class="cat-btn bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs font-semibold px-3 py-1.5 rounded-lg whitespace-nowrap transition">Piadine</button>
+                        <button onclick="filterCategory('HOTDOG')" class="cat-btn bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs font-semibold px-3 py-1.5 rounded-lg whitespace-nowrap transition">Hot Dog</button>
+                        <button onclick="filterCategory('FRIGGITORIA')" class="cat-btn bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs font-semibold px-3 py-1.5 rounded-lg whitespace-nowrap transition">Friggitoria</button>
+                        <button onclick="filterCategory('DOLCI')" class="cat-btn bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs font-semibold px-3 py-1.5 rounded-lg whitespace-nowrap transition">Dolci</button>
+                        <button onclick="filterCategory('BIBITE')" class="cat-btn bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs font-semibold px-3 py-1.5 rounded-lg whitespace-nowrap transition">Bibite & Birre</button>
+                        <button onclick="filterCategory('VINI')" class="cat-btn bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs font-semibold px-3 py-1.5 rounded-lg whitespace-nowrap transition">Vini & Caffè</button>
+                    </div>
                 </div>
-                <div id="list-puzzles" class="space-y-2 max-h-[450px] overflow-y-auto pr-1"></div>
+
+                <!-- LISTA PRODOTTI RENDERIZZATA DA JS -->
+                <div id="menuContainer" class="space-y-10">
+                    <!-- Popolato dinamicamente -->
+                </div>
+
             </div>
+        </main>
+    </div>
 
-            <div class="bg-rose-50/70 border-2 border-rose-300 rounded-3xl p-6 space-y-4">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-3">
-                        <span class="text-3xl">🐕</span>
-                        <div>
-                            <h2 class="text-lg font-black text-rose-950">LE ZAVORRE</h2>
-                            <p class="text-xs text-rose-800">Poco Guadagno + Poche Vendite</p>
-                        </div>
-                    </div>
-                    <span id="badge-dogs" class="px-3 py-1 bg-rose-600 text-white rounded-full text-xs font-extrabold">0</span>
-                </div>
-                <div id="list-dogs" class="space-y-2 max-h-[450px] overflow-y-auto pr-1"></div>
+    <!-- MODALE MODIFICA / GESTIONE RICETTA PRODOTTO -->
+    <div id="productModal" class="fixed inset-0 bg-black/70 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-gray-900 border border-gray-800 rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+            <div class="p-4 border-b border-gray-800 flex items-center justify-between bg-gray-950">
+                <h3 id="modalProductName" class="font-bold text-amber-400 text-base">Modifica Piatto</h3>
+                <button onclick="closeProductModal()" class="text-gray-400 hover:text-white p-1"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
-        </div>
-
-        <!-- Tabella con Dettagli -->
-        <div id="view-table" class="hidden bg-white rounded-3xl border border-slate-200 card-shadow overflow-hidden">
-            <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse text-xs">
-                    <thead>
-                        <tr class="bg-slate-900 text-white">
-                            <th class="p-3.5 font-bold">Prodotto</th>
-                            <th class="p-3.5 font-bold">Ingredienti & Grammature</th>
-                            <th class="p-3.5 font-bold text-right">Prezzo (€)</th>
-                            <th class="p-3.5 font-bold text-right">Food Cost (€)</th>
-                            <th class="p-3.5 font-bold text-right">Margine (€)</th>
-                            <th class="p-3.5 font-bold text-center">Azione</th>
-                        </tr>
-                    </thead>
-                    <tbody id="table-body" class="divide-y divide-slate-100"></tbody>
-                </table>
+            <div class="p-6 overflow-y-auto custom-scrollbar space-y-4 flex-1">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-400 mb-1">Prezzo di Vendita (€)</label>
+                    <input type="number" step="0.5" id="modalProductPrice" class="w-full bg-gray-950 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-400 mb-1">Ingredienti Utilizzati nella Ricetta (Quantità)</label>
+                    <div id="modalIngredientsContainer" class="space-y-2 border border-gray-800 rounded-lg p-3 bg-gray-950">
+                        <!-- Tabella ingredienti del piatto -->
+                    </div>
+                </div>
+                <div class="pt-2">
+                    <button onclick="addIngredientToProductModal()" class="bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs font-semibold px-3 py-2 rounded-lg border border-gray-700 transition flex items-center gap-2">
+                        <i class="fa-solid fa-plus"></i> Aggiungi Ingrediente alla Ricetta
+                    </button>
+                </div>
             </div>
-        </div>
-
-    </main>
-
-    <!-- Modal Modifica Prodotto -->
-    <div id="modal-item" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl p-6 max-w-lg w-full space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto">
-            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-                <h3 id="modal-title" class="font-black text-slate-900 text-lg">Modifica Prodotto</h3>
-                <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 font-bold">✕</button>
+            <div class="p-4 border-t border-gray-800 bg-gray-950 flex justify-end gap-3">
+                <button onclick="closeProductModal()" class="bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs font-semibold px-4 py-2 rounded-lg transition">Annulla</button>
+                <button onclick="saveProductModal()" class="bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold px-4 py-2 rounded-lg transition shadow">Salva Modifiche</button>
             </div>
-            <form id="item-form" onsubmit="saveItem(event)" class="space-y-3 text-xs">
-                <input type="hidden" id="edit-id">
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="font-bold text-slate-700 block mb-1">Categoria</label>
-                        <input type="text" id="edit-cat" required class="w-full p-2.5 border rounded-xl bg-slate-50 focus:bg-white focus:outline-none">
-                    </div>
-                    <div>
-                        <label class="font-bold text-slate-700 block mb-1">Nome Prodotto</label>
-                        <input type="text" id="edit-name" required class="w-full p-2.5 border rounded-xl bg-slate-50 focus:bg-white focus:outline-none">
-                    </div>
-                </div>
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="font-bold text-slate-700 block mb-1">Prezzo (€)</label>
-                        <input type="number" step="0.1" id="edit-price" required class="w-full p-2.5 border rounded-xl bg-slate-50 focus:bg-white focus:outline-none">
-                    </div>
-                    <div>
-                        <label class="font-bold text-slate-700 block mb-1">Volume Mensile (Vendite)</label>
-                        <input type="number" id="edit-vol" required class="w-full p-2.5 border rounded-xl bg-slate-50 focus:bg-white focus:outline-none">
-                    </div>
-                </div>
-
-                <!-- Lista Ingredienti Dinamica del Prodotto -->
-                <div class="space-y-2 pt-2">
-                    <div class="flex items-center justify-between">
-                        <label class="font-bold text-slate-800">Ingredienti nella ricetta:</label>
-                        <button type="button" onclick="addRecipeRow()" class="text-amber-600 font-bold hover:underline text-[11px]">+ Aggiungi ingrediente</button>
-                    </div>
-                    <div id="recipe-ingredients-container" class="space-y-2"></div>
-                </div>
-
-                <div class="flex gap-2 pt-4">
-                    <button type="button" onclick="closeModal()" class="w-1/2 py-2.5 bg-slate-100 text-slate-700 rounded-xl font-bold">Annulla</button>
-                    <button type="submit" class="w-1/2 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl font-bold shadow">Salva Modifiche</button>
-                </div>
-            </form>
         </div>
     </div>
 
+    <!-- SCRIPT LOGICA APPLICAZIONE -->
     <script>
-        // Database Ingredienti Centralizzato con Costi al Kg o al Pezzo
-        let ingredientsDB = {
-            "Mozzarella Fior di Latte": { cost: 7.50, unit: "kg" },
-            "Mozzarella di Bufala": { cost: 12.00, unit: "kg" },
-            "Salsa di Pomodoro": { cost: 1.80, unit: "kg" },
-            "Impasto Pizza": { cost: 1.20, unit: "kg" },
-            "Prosciutto Cotto": { cost: 10.00, unit: "kg" },
-            "Prosciutto Crudo": { cost: 16.00, unit: "kg" },
-            "Salame Piccante": { cost: 11.00, unit: "kg" },
-            "Salsiccia": { cost: 8.50, unit: "kg" },
-            "Mortadella": { cost: 9.50, unit: "kg" },
-            "Bun / Pane Hamburger": { cost: 0.40, unit: "pz" },
-            "Carne Hamburger Chianina (220g)": { cost: 2.20, unit: "pz" },
-            "Patatine Fritte (Porzione)": { cost: 0.80, unit: "pz" },
-            "Bibita / Birra": { cost: 0.75, unit: "pz" }
+        // --- 1. DATABASE INGREDIENTI BASE ---
+        const defaultIngredients = {
+            "farina": { name: "Farina / Impasto Base", unit: "kg", price: 1.80 },
+            "farina_soia": { name: "Farina di Soia", unit: "kg", price: 3.50 },
+            "acqua": { name: "Acqua / Impasto", unit: "lt", price: 0.00 },
+            "mozzarella": { name: "Mozzarella Fior di Latte", unit: "kg", price: 7.50 },
+            "mozzarella_bufala": { name: "Mozzarella di Bufala", unit: "kg", price: 11.00 },
+            "stracciatella": { name: "Stracciatella Fresca", unit: "kg", price: 10.00 },
+            "burrata": { name: "Burrata Fresca", unit: "kg", price: 12.00 },
+            "fontina": { name: "Fontina Valdostana", unit: "kg", price: 12.00 },
+            "provola": { name: "Provola Affumicata", unit: "kg", price: 9.00 },
+            "gorgonzola": { name: "Gorgonzola", unit: "kg", price: 9.50 },
+            "quattro_formaggi": { name: "Mix 4 Formaggi", unit: "kg", price: 10.00 },
+            "parmigiano": { name: "Grana / Parmigiano", unit: "kg", price: 14.00 },
+            "pecorino": { name: "Pecorino Nostrano", unit: "kg", price: 13.00 },
+            "stracchino": { name: "Stracchino", unit: "kg", price: 8.50 },
+            "pomodoro": { name: "Salsa / Pomodoro Pachino", unit: "kg", price: 2.50 },
+            "pomodori_secchi": { name: "Pomodori Secchi / Semi Secchi", unit: "kg", price: 9.00 },
+            "prosciutto_crudo": { name: "Prosciutto Crudo", unit: "kg", price: 18.00 },
+            "prosciutto_cotto": { name: "Prosciutto Cotto", unit: "kg", price: 9.00 },
+            "bresaola": { name: "Bresaola", unit: "kg", price: 22.00 },
+            "speck": { name: "Speck", unit: "kg", price: 14.00 },
+            "mortadella": { name: "Mortadella al Pistacchio", unit: "kg", price: 11.00 },
+            "sella_san_venanzo": { name: "Sella di San Venanzo", unit: "kg", price: 16.00 },
+            "salame_piccante": { name: "Salame Piccante", unit: "kg", price: 13.00 },
+            "salame": { name: "Salame / Capocollo", unit: "kg", price: 12.00 },
+            "pancetta": { name: "Pancetta / Bacon", unit: "kg", price: 11.00 },
+            "lardo": { name: "Lardo di Colonnata", unit: "kg", price: 18.00 },
+            "salsiccia": { name: "Salsiccia Fresca / Secca", unit: "kg", price: 8.50 },
+            "nduja": { name: "Crema di 'Nduja Calabrese", unit: "kg", price: 12.00 },
+            "pollo": { name: "Petto di Pollo / Cotoletta", unit: "kg", price: 9.00 },
+            "manzo_chianina": { name: "Carne Chianina / Manzo / Angus", unit: "kg", price: 15.00 },
+            "fassona": { name: "Carne Fassona Piemontese", unit: "kg", price: 18.00 },
+            "wurstel": { name: "Wurstel di Suino", unit: "kg", price: 7.00 },
+            "salmone": { name: "Salmone Affumicato", unit: "kg", price: 22.00 },
+            "gamberetti": { name: "Gamberetti", unit: "kg", price: 14.00 },
+            "alici": { name: "Alici Sotto Sale / Olio", unit: "kg", price: 15.00 },
+            "verdure_grigliate": { name: "Verdure Grigliate / Miste", unit: "kg", price: 5.00 },
+            "verdure_fritte": { name: "Verdure Fritte / Pastellate", unit: "kg", price: 5.00 },
+            "patate": { name: "Patate / Patatine Fritte", unit: "kg", price: 2.00 },
+            "funghi": { name: "Funghi Champignon / Porcini", unit: "kg", price: 7.00 },
+            "tartufo": { name: "Crema / Salsa Tartufata", unit: "kg", price: 25.00 },
+            "zucca": { name: "Crema di Zucca Gialla", unit: "kg", price: 6.00 },
+            "broccoli": { name: "Broccoli Saltati", unit: "kg", price: 5.00 },
+            "cipolla": { name: "Cipolla / Caramellata", unit: "kg", price: 3.00 },
+            "rucola": { name: "Rucola & Insalata", unit: "kg", price: 4.00 },
+            "frutta_secca": { name: "Noci & Granella di Pistacchio", unit: "kg", price: 20.00 },
+            "pane_panino": { name: "Pane Artigianale / Torta al Testo (Pezzo)", unit: "pz", price: 0.80 },
+            "uova": { name: "Uova", unit: "pz", price: 0.25 },
+            "salse_varie": { name: "Maionese / Ketchup / Salse", unit: "kg", price: 4.00 },
+            "formato_bibita": { name: "Bibita / Bottiglia / Birra (Pezzo)", unit: "pz", price: 1.20 }
         };
 
-        // Database Prodotti Menu
-        let menuData = [
-            {
-                id: 1, categoria: "Pizze Rosse", prodotto: "Margherita", prezzo: 6.50, volume: 110,
-                recipe: [
-                    { ing: "Impasto Pizza", qty: 250, unit: "g" },
-                    { ing: "Salsa di Pomodoro", qty: 70, unit: "g" },
-                    { ing: "Mozzarella Fior di Latte", qty: 110, unit: "g" }
-                ]
-            },
-            {
-                id: 2, categoria: "Pizze Rosse", prodotto: "Diavola", prezzo: 8.50, volume: 85,
-                recipe: [
-                    { ing: "Impasto Pizza", qty: 250, unit: "g" },
-                    { ing: "Salsa di Pomodoro", qty: 70, unit: "g" },
-                    { ing: "Mozzarella Fior di Latte", qty: 110, unit: "g" },
-                    { ing: "Salame Piccante", qty: 50, unit: "g" }
-                ]
-            },
-            {
-                id: 3, categoria: "Pizze Bianche", prodotto: "Bufalina", prezzo: 9.50, volume: 90,
-                recipe: [
-                    { ing: "Impasto Pizza", qty: 250, unit: "g" },
-                    { ing: "Mozzarella di Bufala", qty: 140, unit: "g" }
-                ]
-            },
-            {
-                id: 4, categoria: "Hamburger", prodotto: "Bombardino", prezzo: 13.00, volume: 55,
-                recipe: [
-                    { ing: "Bun / Pane Hamburger", qty: 1, unit: "pz" },
-                    { ing: "Carne Hamburger Chianina (220g)", qty: 1, unit: "pz" },
-                    { ing: "Patatine Fritte (Porzione)", qty: 1, unit: "pz" }
-                ]
-            }
+        // --- 2. DATABASE PRODOTTI COMPLETO (136 PRODOTTI) ---
+        const defaultProducts = [
+            // ANTIPASTI
+            { id: "ant_1", cat: "ANTIPASTI", name: "MARTINICA", price: 12.0, badge: "NUOVO / VEGETARIANO", desc: "Verdure grigliate, Verdure fritte, Verdure ripiene, Crostini misti. Servito con Torta al Testo.", recipe: {verdure_grigliate: 0.2, verdure_fritte: 0.15, pane_panino: 1.0} },
+            { id: "ant_2", cat: "ANTIPASTI", name: "MONTSERRAT", price: 12.0, badge: "NUOVO", desc: "Bresaola, Rucola, Grana, Prosciutto Cotto, Funghi Champignon, Pomodoro Pachino. Servito con Torta al Testo.", recipe: {bresaola: 0.08, prosciutto_cotto: 0.08, rucola: 0.05, parmigiano: 0.03, funghi: 0.05, pomodoro: 0.05, pane_panino: 1.0} },
+            { id: "ant_3", cat: "ANTIPASTI", name: "NICARAGUA", price: 9.0, badge: "NUOVO", desc: "3 Bruschette (4 Formaggi, Tartufata, Speck) + 3 Bruschette (Mozzarella, Salsicce, Zucchine, Olio aromatizzato).", recipe: {pane_panino: 1.5, quattro_formaggi: 0.05, tartufo: 0.02, speck: 0.04, mozzarella: 0.05, salsiccia: 0.05} },
+            { id: "ant_4", cat: "ANTIPASTI", name: "TAGLIERE NOSTRANO (Antipasto)", price: 10.0, badge: "", desc: "Selezione di affettati e formaggi accompagnato da Torta al Testo (Aggiunta di bruschette € 2,00).", recipe: {prosciutto_crudo: 0.05, sella_san_venanzo: 0.05, salame: 0.05, pecorino: 0.05, gorgonzola: 0.05, pane_panino: 1.0} },
+
+            // TORTE AL TESTO
+            { id: "torta_1", cat: "TORTE", name: "TORTA AL TESTO (Tradizione)", price: 8.5, badge: "TRADIZIONE", desc: "Tipica torta umbra fatta con acqua e farina, farcita con salsiccia, erba cotta e pecorino. (Puoi anche farcirla con crudo / sella / verdure).", recipe: {farina: 0.25, salsiccia: 0.15, pecorino: 0.05, verdure_grigliate: 0.1} },
+
+            // PALA
+            { id: "pala_1", cat: "PALA", name: "PALA ESTIVA", price: 10.0, badge: "", desc: "Mozzarella fior di latte, Pomodoro pachino, Rucola, Mozzarella a crudo.", recipe: {farina: 0.35, mozzarella: 0.18, pomodoro: 0.1, rucola: 0.04} },
+            { id: "pala_2", cat: "PALA", name: "GENOVESE", price: 11.0, badge: "", desc: "Mozzarella fior di latte, Crema di zucca, Alici, Pomodori secchi, Stracciatella fresca, Gocce di pesto.", recipe: {farina: 0.35, mozzarella: 0.12, zucca: 0.08, alici: 0.03, pomodori_secchi: 0.04, stracciatella: 0.08} },
+            { id: "pala_3", cat: "PALA", name: "MORTADELLA", price: 11.0, badge: "", desc: "Mozzarella fior di latte, Mortadella al pistacchio, Granelle di pistacchio, Stracciatella fresca.", recipe: {farina: 0.35, mozzarella: 0.12, mortadella: 0.12, frutta_secca: 0.03, stracciatella: 0.08} },
+            { id: "pala_4", cat: "PALA", name: "ALLE NOCI", price: 12.0, badge: "", desc: "Mozzarella fior di latte, Gorgonzola, Speck, Pere, Noci.", recipe: {farina: 0.35, mozzarella: 0.12, gorgonzola: 0.08, speck: 0.08, frutta_secca: 0.04} },
+            { id: "pala_5", cat: "PALA", name: "BROCCOLI", price: 11.0, badge: "", desc: "Mozzarella fior di latte, Provola affumicata, Broccoli saltati in padella, Salsiccia, Patate aromatizzate.", recipe: {farina: 0.35, mozzarella: 0.1, provola: 0.06, broccoli: 0.08, salsiccia: 0.08, patate: 0.05} },
+            { id: "pala_6", cat: "PALA", name: "LA FONTINA", price: 11.0, badge: "", desc: "Mozzarella fior di latte, Crema di zucca gialla, Fontina valdostana, Sella di San Venanzo.", recipe: {farina: 0.35, mozzarella: 0.1, zucca: 0.08, fontina: 0.08, sella_san_venanzo: 0.08} },
+            { id: "pala_7", cat: "PALA", name: "LARDOSA", price: 12.0, badge: "", desc: "Mozzarella fior di latte, Lardo di Colonnata, Crema di carciofi, Carciofi saltati, Pomodori semi secchi, Bufala a crudo.", recipe: {farina: 0.35, mozzarella: 0.1, lardo: 0.06, pomodori_secchi: 0.05, mozzarella_bufala: 0.08} },
+            { id: "pala_8", cat: "PALA", name: "'NDUJA DI SPILINGA", price: 12.0, badge: "", desc: "Pomodoro, Mozzarella fior di latte, Crema di 'nduja calabrese, Cipolla rossa, Peperoni, Spolverata di peperoncino.", recipe: {farina: 0.35, pomodoro: 0.12, mozzarella: 0.12, nduja: 0.06, cipolla: 0.04, verdure_grigliate: 0.05} },
+
+            // PIZZE ROSSE
+            { id: "ros_1", cat: "ROSSE", name: "CUBA", price: 10.0, badge: "NUOVO", desc: "Pomodoro, Mozz. Fior di Latte, Cipolla Rossa, Peperoni, Crema Nduja Calabrese, Spolverata di peperoncino.", recipe: {farina: 0.25, farina_soia: 0.02, pomodoro: 0.12, mozzarella: 0.12, cipolla: 0.04, verdure_grigliate: 0.05, nduja: 0.05} },
+            { id: "ros_2", cat: "ROSSE", name: "GRENADA (PERUGINA)", price: 7.0, badge: "", desc: "Pomodoro, Mozzarella fior di latte, Salsiccia.", recipe: {farina: 0.25, farina_soia: 0.02, pomodoro: 0.12, mozzarella: 0.12, salsiccia: 0.08} },
+            { id: "ros_3", cat: "ROSSE", name: "LEVANTE (BISMARK)", price: 7.5, badge: "", desc: "Pomodoro, Mozzarella fior di latte, Uovo alla coque, Speck.", recipe: {farina: 0.25, farina_soia: 0.02, pomodoro: 0.12, mozzarella: 0.12, uova: 1.0, speck: 0.06} },
+            { id: "ros_4", cat: "ROSSE", name: "CALABRESE", price: 7.5, badge: "", desc: "Pomodoro, Mozzarella fior di latte, Salame piccante, Pomodori semi secchi, Capriccio mediterraneo.", recipe: {farina: 0.25, farina_soia: 0.02, pomodoro: 0.12, mozzarella: 0.12, salame_piccante: 0.06, pomodori_secchi: 0.04} },
+            { id: "ros_5", cat: "ROSSE", name: "EL GUAPO", price: 8.5, badge: "", desc: "Pomodoro, Mozzarella fior di latte, Salame piccante, Salsiccia, Salsa piccante Harissa, Capperi.", recipe: {farina: 0.25, farina_soia: 0.02, pomodoro: 0.12, mozzarella: 0.12, salame_piccante: 0.05, salsiccia: 0.06} },
+            { id: "ros_6", cat: "ROSSE", name: "GEORGE TOWN (VEGETARIANA)", price: 7.5, badge: "VEGETARIANA", desc: "Solo pomodoro, Verdure miste grigliate, Origano.", recipe: {farina: 0.25, farina_soia: 0.02, pomodoro: 0.15, verdure_grigliate: 0.15} },
+            { id: "ros_7", cat: "ROSSE", name: "MANZANILLA (BOSCAIOLA)", price: 7.5, badge: "", desc: "Pomodoro, Mozzarella, Salsiccia, Funghi.", recipe: {farina: 0.25, farina_soia: 0.02, pomodoro: 0.12, mozzarella: 0.12, salsiccia: 0.06, funghi: 0.06} },
+            { id: "ros_8", cat: "ROSSE", name: "MARACAIBO (4 STAGIONI)", price: 8.0, badge: "", desc: "Pomodoro, Mozzarella fior di latte, Funghi, Uovo, Carciofi, Crudo, Olive nere.", recipe: {farina: 0.25, farina_soia: 0.02, pomodoro: 0.12, mozzarella: 0.1, funghi: 0.04, uova: 1.0, prosciutto_crudo: 0.05} },
+            { id: "ros_9", cat: "ROSSE", name: "PANAMA", price: 7.5, badge: "", desc: "Pomodoro, Mozzarella fior di latte, Salsa 4 formaggi, Prosciutto cotto, Gorgonzola.", recipe: {farina: 0.25, farina_soia: 0.02, pomodoro: 0.12, mozzarella: 0.1, quattro_formaggi: 0.05, prosciutto_cotto: 0.05, gorgonzola: 0.04} },
+            { id: "ros_10", cat: "ROSSE", name: "SAINT VINCENT", price: 7.5, badge: "", desc: "Pomodoro, Mozzarella fior di latte, Peperoni, Salsiccia.", recipe: {farina: 0.25, farina_soia: 0.02, pomodoro: 0.12, mozzarella: 0.12, verdure_grigliate: 0.06, salsiccia: 0.06} },
+            { id: "ros_11", cat: "ROSSE", name: "PORT AU PRINCE", price: 7.5, badge: "", desc: "Pomodoro, Mozzarella fior di latte, Funghi, Salame piccante.", recipe: {farina: 0.25, farina_soia: 0.02, pomodoro: 0.12, mozzarella: 0.12, funghi: 0.06, salame_piccante: 0.05} },
+            { id: "ros_12", cat: "ROSSE", name: "SANTO DOMINGO", price: 7.5, badge: "", desc: "Pomodoro, Mozzarella fior di latte, Salame piccante, 4 Formaggi.", recipe: {farina: 0.25, farina_soia: 0.02, pomodoro: 0.12, mozzarella: 0.1, salame_piccante: 0.05, quattro_formaggi: 0.06} },
+            { id: "ros_13", cat: "ROSSE", name: "TOBAGO (FRANCESCANA)", price: 7.5, badge: "", desc: "Pomodoro, Mozzarella fior di latte, Funghi, Crudo.", recipe: {farina: 0.25, farina_soia: 0.02, pomodoro: 0.12, mozzarella: 0.12, funghi: 0.06, prosciutto_crudo: 0.05} },
+            { id: "ros_14", cat: "ROSSE", name: "TORTOLA", price: 8.0, badge: "NUOVO", desc: "Pomodoro, Mozzarella fior di latte, Crudo, Funghi, Salsiccia, Peperoncino, Rucola, Grana.", recipe: {farina: 0.25, farina_soia: 0.02, pomodoro: 0.12, mozzarella: 0.1, prosciutto_crudo: 0.05, funghi: 0.04, salsiccia: 0.05, rucola: 0.03, parmigiano: 0.02} },
+            { id: "ros_15", cat: "ROSSE", name: "MARGHERITA", price: 6.0, badge: "", desc: "Pomodoro, Mozzarella fior di latte.", recipe: {farina: 0.25, farina_soia: 0.02, pomodoro: 0.15, mozzarella: 0.15} },
+
+            // PIZZE BIANCHE
+            { id: "bia_1", cat: "BIANCHE", name: "DOMINICA", price: 10.0, badge: "NUOVO", desc: "Mozzarella fior di latte, Mortadella al pistacchio, Granelle di Pistacchio, Stracciatella Fresca.", recipe: {farina: 0.25, farina_soia: 0.02, mozzarella: 0.12, mortadella: 0.1, frutta_secca: 0.03, stracciatella: 0.08} },
+            { id: "bia_2", cat: "BIANCHE", name: "NASSAU", price: 7.0, badge: "", desc: "Mozzarella fior di latte, Pachino, Rucola, Mozzarella fresca.", recipe: {farina: 0.25, farina_soia: 0.02, mozzarella: 0.15, pomodoro: 0.06, rucola: 0.04} },
+            { id: "bia_3", cat: "BIANCHE", name: "ANTIGUA", price: 7.5, badge: "", desc: "Mozzarella fior di latte, 4 Formaggi, Salsa tartufata.", recipe: {farina: 0.25, farina_soia: 0.02, mozzarella: 0.12, quattro_formaggi: 0.08, tartufo: 0.03} },
+            { id: "bia_4", cat: "BIANCHE", name: "BARRANQUILLA", price: 8.0, badge: "", desc: "Mozzarella fior di latte, Salsa tartufata, Funghi, Salsiccia.", recipe: {farina: 0.25, farina_soia: 0.02, mozzarella: 0.12, tartufo: 0.03, funghi: 0.05, salsiccia: 0.06} },
+            { id: "bia_5", cat: "BIANCHE", name: "BELIZE", price: 7.5, badge: "", desc: "Mozzarella fior di latte, Zucchine, Pancetta, Provola.", recipe: {farina: 0.25, farina_soia: 0.02, mozzarella: 0.1, verdure_grigliate: 0.06, pancetta: 0.06, provola: 0.06} },
+            { id: "bia_6", cat: "BIANCHE", name: "BERMUDA", price: 8.5, badge: "", desc: "Mozzarella fior di latte, Gorgonzola, Speck, Pere, Noci.", recipe: {farina: 0.25, farina_soia: 0.02, mozzarella: 0.12, gorgonzola: 0.06, speck: 0.06, frutta_secca: 0.03} },
+            { id: "bia_7", cat: "BIANCHE", name: "BUFALINA", price: 8.5, badge: "", desc: "Mozzarella di bufala, Pachino, Basilico, Origano.", recipe: {farina: 0.25, farina_soia: 0.02, mozzarella_bufala: 0.2, pomodoro: 0.08} },
+            { id: "bia_8", cat: "BIANCHE", name: "CANCUN", price: 8.0, badge: "", desc: "Mozzarella fior di latte, Bresaola, Rucola, Grana.", recipe: {farina: 0.25, farina_soia: 0.02, mozzarella: 0.12, bresaola: 0.08, rucola: 0.04, parmigiano: 0.03} },
+            { id: "bia_9", cat: "BIANCHE", name: "CARACAS", price: 8.5, badge: "", desc: "Mozzarella fior di latte, Salmone, Rucola, Grana.", recipe: {farina: 0.25, farina_soia: 0.02, mozzarella: 0.12, salmone: 0.08, rucola: 0.04, parmigiano: 0.03} },
+            { id: "bia_10", cat: "BIANCHE", name: "CARTAGENA (VEGETARIANA)", price: 7.5, badge: "VEGETARIANA", desc: "Mozzarella fior di latte, Melanzane, Zucchine, Radicchio, Mais, Pachino.", recipe: {farina: 0.25, farina_soia: 0.02, mozzarella: 0.12, verdure_grigliate: 0.15, pomodoro: 0.05} },
+            { id: "bia_11", cat: "BIANCHE", name: "ELEUTHERA", price: 7.5, badge: "", desc: "Mozzarella fior di latte, Stracchino, Rucola, Crudo.", recipe: {farina: 0.25, farina_soia: 0.02, mozzarella: 0.1, stracchino: 0.06, rucola: 0.04, prosciutto_crudo: 0.05} },
+            { id: "bia_12", cat: "BIANCHE", name: "EMILIANA", price: 7.5, badge: "", desc: "Mozzarella fior di latte, Capriccio di tartufo, Mortadella a julienne, Rosmarino.", recipe: {farina: 0.25, farina_soia: 0.02, mozzarella: 0.12, tartufo: 0.03, mortadella: 0.08} },
+            { id: "bia_13", cat: "BIANCHE", name: "GUADALUPA", price: 8.5, badge: "", desc: "Mozzarella fior di latte, 4 Formaggi, Porcini, Salsa di porcini.", recipe: {farina: 0.25, farina_soia: 0.02, mozzarella: 0.1, quattro_formaggi: 0.08, funghi: 0.08} },
+            { id: "bia_14", cat: "BIANCHE", name: "JAMAICA", price: 8.0, badge: "", desc: "Mozzarella fior di latte, Patate lesse, Salsiccia, Rosmarino.", recipe: {farina: 0.25, farina_soia: 0.02, mozzarella: 0.12, patate: 0.1, salsiccia: 0.06} },
+            { id: "bia_15", cat: "BIANCHE", name: "KINGSTON (FOCACCIA)", price: 4.5, badge: "", desc: "Focaccia classica con olio e rosmarino.", recipe: {farina: 0.25, farina_soia: 0.02} },
+            { id: "bia_16", cat: "BIANCHE", name: "MAREMMANA", price: 8.0, badge: "", desc: "Mozzarella fior di latte, Crema di zucca, Lardo di Colonnata.", recipe: {farina: 0.25, farina_soia: 0.02, mozzarella: 0.12, zucca: 0.08, lardo: 0.06} },
+            { id: "bia_17", cat: "BIANCHE", name: "PUERTO RICO", price: 9.0, badge: "", desc: "Mozzarella fior di latte, 4 Formaggi, Gamberetti in salsa rosa, Mais, Rucola.", recipe: {farina: 0.25, farina_soia: 0.02, mozzarella: 0.1, quattro_formaggi: 0.06, gamberetti: 0.08, rucola: 0.03} },
+            { id: "bia_18", cat: "BIANCHE", name: "TORTUGA (4 FORMAGGI)", price: 8.0, badge: "", desc: "Mozzarella fior di latte, 4 Formaggi, Gorgonzola.", recipe: {farina: 0.25, farina_soia: 0.02, mozzarella: 0.12, quattro_formaggi: 0.1, gorgonzola: 0.05} },
+
+            // HAMBURGER
+            { id: "ham_1", cat: "HAMBURGER", name: "BOMBARDINO", price: 14.0, badge: "NUOVO", desc: "220Gr di Chianina succosa, Cheddar fuso, Bacon croccante, Cipolla caramellata, Jalapeno, Pomodoro, Lattuga, Salsa Galleon, Pane artigianale.", recipe: {manzo_chianina: 0.22, quattro_formaggi: 0.04, pancetta: 0.04, cipolla: 0.04, verdure_grigliate: 0.04, pane_panino: 1.0, salse_varie: 0.03} },
+            { id: "ham_2", cat: "HAMBURGER", name: "ARUBA (Cotoletta alla Milanese)", price: 12.0, badge: "NUOVO", desc: "Cotoletta di petto di pollo alla milanese con contorno patate fritte.", recipe: {pollo: 0.2, patate: 0.2, pane_panino: 1.0} },
+            { id: "ham_3", cat: "HAMBURGER", name: "BAHAMAS", price: 15.0, badge: "NUOVO", desc: "Hamburger di Scottona 220 gr, Melanzane, Pom Semi Secchi, Provola, Maionese, Contorno Patate Arrosto.", recipe: {manzo_chianina: 0.22, verdure_grigliate: 0.06, pomodori_secchi: 0.04, provola: 0.06, patate: 0.2, pane_panino: 1.0} },
+            { id: "ham_4", cat: "HAMBURGER", name: "CURACAO", price: 14.0, badge: "NUOVO", desc: "Hamburger di Pollo 150 gr, Maionese, Lattuga, Pomodoro a fette, Contorno verdure pastellate.", recipe: {pollo: 0.15, verdure_fritte: 0.2, rucola: 0.04, pomodoro: 0.04, pane_panino: 1.0} },
+            { id: "ham_5", cat: "HAMBURGER", name: "PETTO DI POLLO ALLA GRIGLIA", price: 12.0, badge: "NUOVO", desc: "Petto di pollo al piatto con contorno a scelta, servito con Torta al Testo.", recipe: {pollo: 0.25, verdure_grigliate: 0.15, pane_panino: 1.0} },
+            { id: "ham_6", cat: "HAMBURGER", name: "HAMBURGER AL PIATTO", price: 14.0, badge: "", desc: "Hamburger di Chianina 220 gr con contorno e torta al testo casareccia.", recipe: {manzo_chianina: 0.22, patate: 0.2, pane_panino: 1.0} },
+            { id: "ham_7", cat: "HAMBURGER", name: "ANNIVERSARY BURGER", price: 15.0, badge: "", desc: "220 gr Angus argentina, Salsa cheddar, Bacon, Pomodoro, Cipolla rossa, Lattuga, Salsa B&B.", recipe: {manzo_chianina: 0.22, quattro_formaggi: 0.05, pancetta: 0.05, pomodoro: 0.05, cipolla: 0.04, pane_panino: 1.0, patate: 0.2} },
+            { id: "ham_8", cat: "HAMBURGER", name: "ALESSIA'S BURGER", price: 15.0, badge: "", desc: "Hamburger manzo 150 gr, Burrata fresca, Pomodori semi secchi, Mortadella, Maionese, Rucola.", recipe: {manzo_chianina: 0.15, burrata: 0.08, pomodori_secchi: 0.04, mortadella: 0.06, rucola: 0.04, pane_panino: 1.0} },
+            { id: "ham_9", cat: "HAMBURGER", name: "BEEF BURGER", price: 13.0, badge: "", desc: "150 gr Manzo nostrano, Ragù di manzo, Melanzane, Zucchine, Mozzarella alla piastra.", recipe: {manzo_chianina: 0.15, verdure_grigliate: 0.08, mozzarella: 0.08, pane_panino: 1.0} },
+            { id: "ham_10", cat: "HAMBURGER", name: "ANTONIO'S", price: 15.0, badge: "", desc: "Hamburger 220 Chianina, Mozzarella fresca, 4 Formaggi, Salsa rosa, Bacon, Rucola.", recipe: {manzo_chianina: 0.22, mozzarella: 0.06, quattro_formaggi: 0.05, pancetta: 0.04, rucola: 0.03, pane_panino: 1.0} },
+            { id: "ham_11", cat: "HAMBURGER", name: "PETER'S", price: 15.0, badge: "", desc: "Hamburger Chianina 220 gr, Salsa piccante, Sottiletta, Cipolla fritta, Cetrioli, Pomodoro.", recipe: {manzo_chianina: 0.22, quattro_formaggi: 0.04, cipolla: 0.05, pomodoro: 0.04, pane_panino: 1.0} },
+            { id: "ham_12", cat: "HAMBURGER", name: "DOUBLE BACON BURGER", price: 15.0, badge: "", desc: "200 gr Fassona piemontese, Doppio bacon, Cheddar, Cipolla caramellata, Insalata, Pomodoro.", recipe: {fassona: 0.2, pancetta: 0.08, quattro_formaggi: 0.05, cipolla: 0.04, pomodoro: 0.04, pane_panino: 1.0} },
+            { id: "ham_13", cat: "HAMBURGER", name: "CABOTO", price: 9.0, badge: "", desc: "Hamburger 150 gr manzo, Salsa 4 formaggi, Salsa Harissa, Sottiletta, Crauti.", recipe: {manzo_chianina: 0.15, quattro_formaggi: 0.06, pancetta: 0.03, pane_panino: 1.0, patate: 0.15} },
+            { id: "ham_14", cat: "HAMBURGER", name: "CABRAL", price: 9.0, badge: "", desc: "Hamburger 150 gr manzo, Bacon, Salsa Harissa, Maionese.", recipe: {manzo_chianina: 0.15, pancetta: 0.05, salse_varie: 0.04, pane_panino: 1.0, patate: 0.15} },
+            { id: "ham_15", cat: "HAMBURGER", name: "CHEESEBURGER", price: 10.0, badge: "", desc: "Hamburger 150 gr manzo, Pomodoro, Lattuga, Cipolla, Maionese, 4 formaggi, Cheddar, Gorgonzola.", recipe: {manzo_chianina: 0.15, pomodoro: 0.04, rucola: 0.03, cipolla: 0.03, quattro_formaggi: 0.08, gorgonzola: 0.04, pane_panino: 1.0, patate: 0.15} },
+            { id: "ham_16", cat: "HAMBURGER", name: "HAMBURGER GALLEON", price: 9.5, badge: "", desc: "Hamburger 150 gr manzo, Salsa amatriciana, Pecorino, Uovo, Pomodoro, Lattuga.", recipe: {manzo_chianina: 0.15, pancetta: 0.04, pecorino: 0.03, uova: 1.0, pomodoro: 0.04, pane_panino: 1.0} },
+            { id: "ham_17", cat: "HAMBURGER", name: "NUNEZ", price: 9.0, badge: "", desc: "Hamburger 150 gr manzo, Pomodoro, Lattuga, Ketchup, Maionese.", recipe: {manzo_chianina: 0.15, pomodoro: 0.04, rucola: 0.03, salse_varie: 0.05, pane_panino: 1.0, patate: 0.15} },
+
+            // TAGLIERI
+            { id: "tag_1", cat: "TAGLIERI", name: "TAGLIERE NOSTRANO", price: 10.0, badge: "", desc: "Tagliere affettati e formaggi nostrani accompagnato da Torta al Testo.", recipe: {prosciutto_crudo: 0.06, sella_san_venanzo: 0.05, salame: 0.05, pecorino: 0.05, gorgonzola: 0.05, pane_panino: 1.0} },
+
+            // PANINI
+            { id: "pan_1", cat: "PANINI", name: "EL PERUGINO", price: 9.0, badge: "", desc: "Doppia salsiccia alla griglia, Cipolla caramellata, Peperoni arrosto, Salsa piccante, Emmental.", recipe: {salsiccia: 0.2, cipolla: 0.06, verdure_grigliate: 0.08, quattro_formaggi: 0.04, pane_panino: 1.0, patate: 0.15} },
+            { id: "pan_2", cat: "PANINI", name: "BRIGANTINO", price: 7.0, badge: "", desc: "Cotoletta di pollo, Lattuga, Pomodoro, Maionese.", recipe: {pollo: 0.15, rucola: 0.04, pomodoro: 0.04, salse_varie: 0.04, pane_panino: 1.0, patate: 0.15} },
+
+            // PIADINE
+            { id: "piad_1", cat: "PIADINE", name: "PIADINA con MORTADELLA", price: 12.0, badge: "NUOVO", desc: "Hamburger manzo 150 gr, Burrata fresca, Pomodori semi secchi, Rucola, Mortadella, Maionese.", recipe: {farina: 0.2, manzo_chianina: 0.15, burrata: 0.08, pomodori_secchi: 0.04, rucola: 0.04, mortadella: 0.08} },
+            { id: "piad_2", cat: "PIADINE", name: "CAPITANO", price: 6.5, badge: "", desc: "Mozzarella fior di latte, Prosciutto crudo.", recipe: {farina: 0.2, mozzarella: 0.1, prosciutto_crudo: 0.08} },
+            { id: "piad_3", cat: "PIADINE", name: "CHIANINA", price: 10.0, badge: "", desc: "Hamburger di Chianina 100 gr, Bacon, Cheddar, Insalata, Pomodoro, Cipolla, Mozzarella.", recipe: {farina: 0.2, manzo_chianina: 0.1, pancetta: 0.04, quattro_formaggi: 0.04, pomodoro: 0.04, mozzarella: 0.06} },
+            { id: "piad_4", cat: "PIADINE", name: "MOZZO", price: 7.5, badge: "", desc: "Bresaola, Rucola, Stracchino, Champignon.", recipe: {farina: 0.2, bresaola: 0.06, rucola: 0.04, stracchino: 0.06, funghi: 0.04} },
+            { id: "piad_5", cat: "PIADINE", name: "NOCCHIERO", price: 7.0, badge: "", desc: "Mozzarella fior di latte, Champignon, Crudo, Rucola, Pachino.", recipe: {farina: 0.2, mozzarella: 0.08, funghi: 0.04, prosciutto_crudo: 0.06, rucola: 0.03} },
+            { id: "piad_6", cat: "PIADINE", name: "NOSTROMO", price: 7.0, badge: "", desc: "Mozzarella fior di latte, Scamorza affumicata, Speck, Mais, Pachino.", recipe: {farina: 0.2, mozzarella: 0.08, provola: 0.06, speck: 0.06, pomodoro: 0.04} },
+            { id: "piad_7", cat: "PIADINE", name: "ORTOLANA", price: 9.0, badge: "", desc: "Hamburger Chianina 100 gr, Melanzane, Pomodoro, Insalata, Mozzarella.", recipe: {farina: 0.2, manzo_chianina: 0.1, verdure_grigliate: 0.1, pomodoro: 0.04, mozzarella: 0.06} },
+            { id: "piad_8", cat: "PIADINE", name: "PARMIGIANA", price: 7.5, badge: "", desc: "Parmigiano, Champignon, Rucola, Pachino, Salsiccia.", recipe: {farina: 0.2, parmigiano: 0.04, funghi: 0.04, rucola: 0.03, salsiccia: 0.06} },
+            { id: "piad_9", cat: "PIADINE", name: "PIADINA CON SELLA", price: 9.0, badge: "", desc: "Sella di San Venanzo e Pecorino.", recipe: {farina: 0.2, sella_san_venanzo: 0.1, pecorino: 0.05} },
+            { id: "piad_10", cat: "PIADINE", name: "SPUGNA", price: 8.5, badge: "", desc: "Mozzarella, Salsiccia, Funghi, Tartufo.", recipe: {farina: 0.2, mozzarella: 0.08, salsiccia: 0.06, funghi: 0.04, tartufo: 0.03} },
+            { id: "piad_11", cat: "PIADINE", name: "TACCHINO", price: 8.0, badge: "", desc: "Tacchino, Rucola, Pachino, Mozzarella, Salsa tonnata.", recipe: {farina: 0.2, pollo: 0.1, rucola: 0.03, mozzarella: 0.06, salse_varie: 0.04} },
+            { id: "piad_12", cat: "PIADINE", name: "VEGETARIANA", price: 7.0, badge: "VEGETARIANA", desc: "Mozzarella fior di latte, Verdure grigliate.", recipe: {farina: 0.2, mozzarella: 0.1, verdure_grigliate: 0.15} },
+
+            // HOT DOG
+            { id: "hot_1", cat: "HOTDOG", name: "TEDESCO", price: 8.0, badge: "", desc: "Wurstel di suino 90 gr, Cipolla caramellata, Crauti, Ketchup, Maionese, Emmental.", recipe: {wurstel: 0.09, cipolla: 0.04, quattro_formaggi: 0.04, salse_varie: 0.04, pane_panino: 1.0} },
+            { id: "hot_2", cat: "HOTDOG", name: "A GONFIE VELE", price: 7.0, badge: "", desc: "Wurstel di suino 90 gr, Ketchup, Maionese con patate fritte.", recipe: {wurstel: 0.09, salse_varie: 0.05, pane_panino: 1.0, patate: 0.15} },
+            { id: "hot_3", cat: "HOTDOG", name: "IN SECCA", price: 7.0, badge: "", desc: "Wurstel di suino 90 gr, Salame piccante, Ketchup, Mozzarella con patate fritte.", recipe: {wurstel: 0.09, salame_piccante: 0.04, mozzarella: 0.06, pane_panino: 1.0, patate: 0.15} },
+
+            // FRIGGITORIA
+            { id: "frig_1", cat: "FRIGGITORIA", name: "JALAPENO PICCANTI VERDI (5 pz)", price: 6.0, badge: "NUOVO", desc: "5 Pezzi con cheddar.", recipe: {verdure_fritte: 0.15, quattro_formaggi: 0.05} },
+            { id: "frig_2", cat: "FRIGGITORIA", name: "FIORI DI ZUCCA (4 pz)", price: 6.0, badge: "NUOVO", desc: "4 Pz Fiori di Zucca con alici.", recipe: {verdure_fritte: 0.15, alici: 0.03} },
+            { id: "frig_3", cat: "FRIGGITORIA", name: "PATATE ARROSTO CON BACON", price: 4.0, badge: "NUOVO / GF", desc: "Patate arrosto con bacon.", recipe: {patate: 0.2, pancetta: 0.05} },
+            { id: "frig_4", cat: "FRIGGITORIA", name: "JALAPENOS PICCANTI ROSSI (5 pz)", price: 6.0, badge: "", desc: "5 Pz piccanti.", recipe: {verdure_fritte: 0.15} },
+            { id: "frig_5", cat: "FRIGGITORIA", name: "ALETTE DI POLLO (6 pz)", price: 6.0, badge: "", desc: "6 Pezzi.", recipe: {pollo: 0.2} },
+            { id: "frig_6", cat: "FRIGGITORIA", name: "ANELLI DI CIPOLLA", price: 5.0, badge: "", desc: "Porzione anelli di cipolla.", recipe: {verdure_fritte: 0.18} },
+            { id: "frig_7", cat: "FRIGGITORIA", name: "CHELE DI GRANCHIO (4 pz)", price: 5.0, badge: "", desc: "4 Pezzi.", recipe: {verdure_fritte: 0.18} },
+            { id: "frig_8", cat: "FRIGGITORIA", name: "CROCCHETTE DI POLLO O PATATE (7 pz)", price: 5.0, badge: "", desc: "7 Pezzi.", recipe: {patate: 0.2} },
+            { id: "frig_9", cat: "FRIGGITORIA", name: "FATTO DA NOI (Mix Speciale)", price: 10.0, badge: "", desc: "2 Roll piccanti, 2 crocchette patate piccanti, 2 polpette manzo al cheddar, 2 corn hog bacon, patate scavate.", recipe: {patate: 0.3, manzo_chianina: 0.1, pancetta: 0.05} },
+            { id: "frig_10", cat: "FRIGGITORIA", name: "GRAN MIX", price: 10.0, badge: "", desc: "2 Olive ascolane, 2 mozzarelline, 2 crocchette patate, 2 chele di granchio, patatine.", recipe: {patate: 0.25, mozzarella: 0.06} },
+            { id: "frig_11", cat: "FRIGGITORIA", name: "MIX PICCANTE", price: 10.0, badge: "", desc: "2 Jalapenos, 2 alette pollo, anelli cipolla, patate chips.", recipe: {patate: 0.25, pollo: 0.1} },
+            { id: "frig_12", cat: "FRIGGITORIA", name: "MOZZARELLINE (7 pz)", price: 5.0, badge: "", desc: "7 Pezzi.", recipe: {mozzarella: 0.15} },
+            { id: "frig_13", cat: "FRIGGITORIA", name: "OLIVE ASCOLANE (7 pz)", price: 5.0, badge: "", desc: "7 Pezzi.", recipe: {manzo_chianina: 0.12} },
+            { id: "frig_14", cat: "FRIGGITORIA", name: "PATATE SCAVATE (DIPPERS)", price: 5.0, badge: "", desc: "Porzione patate dippers.", recipe: {patate: 0.25} },
+            { id: "frig_15", cat: "FRIGGITORIA", name: "PATATE & WURSTEL", price: 6.0, badge: "", desc: "Porzione mista.", recipe: {patate: 0.2, wurstel: 0.08} },
+            { id: "frig_16", cat: "FRIGGITORIA", name: "PATATINE / CHIPS", price: 5.0, badge: "", desc: "Porzione standard.", recipe: {patate: 0.25} },
+            { id: "frig_17", cat: "FRIGGITORIA", name: "SUPPLI", price: 2.0, badge: "", desc: "Al pezzo singolo.", recipe: {riso: 0.08, mozzarella: 0.03} },
+            { id: "frig_18", cat: "FRIGGITORIA", name: "VERDURE FRITTE", price: 6.0, badge: "", desc: "Porzione verdure pastellate.", recipe: {verdure_fritte: 0.25} },
+
+            // DOLCI
+            { id: "dolc_1", cat: "DOLCI", name: "TORTA CHEESECAKE", price: 5.5, badge: "", desc: "Frutti di bosco / Caramello / Nutella / Pistacchio.", recipe: {frutta_secca: 0.1} },
+            { id: "dolc_2", cat: "DOLCI", name: "SEMIFREDDO al PISTACCHIO", price: 6.0, badge: "NUOVO", desc: "Semifreddo artigianale al pistacchio.", recipe: {frutta_secca: 0.12} },
+            { id: "dolc_3", cat: "DOLCI", name: "SEMIFREDDO AL CROCCANTE", price: 5.5, badge: "", desc: "Su letto di cioccolato fondente.", recipe: {frutta_secca: 0.1} },
+            { id: "dolc_4", cat: "DOLCI", name: "FRAGOLE / MACEDONIA / ANANAS", price: 6.0, badge: "", desc: "Frutta fresca di stagione.", recipe: {frutta_secca: 0.1} },
+            { id: "dolc_5", cat: "DOLCI", name: "CREMA CATALANA / PANNA COTTA", price: 5.5, badge: "", desc: "Fatto in casa con vari topping.", recipe: {frutta_secca: 0.08} },
+            { id: "dolc_6", cat: "DOLCI", name: "COPPA GELATO / CREPES / TARTUFO / TIRAMISU'", price: 5.5, badge: "", desc: "Ampia selezione di dolci artigianali.", recipe: {frutta_secca: 0.1} },
+            { id: "dolc_7", cat: "DOLCI", name: "PIZZA DOLCE", price: 7.0, badge: "", desc: "Con Nutella o panna e granella di nocciola.", recipe: {farina: 0.2, frutta_secca: 0.08} },
+            { id: "dolc_8", cat: "DOLCI", name: "TORTINO / SUFFLE' AL CIOCCOLATO", price: 5.5, badge: "", desc: "Con cuore caldo.", recipe: {frutta_secca: 0.12} },
+
+            // BIBITE
+            { id: "bib_1", cat: "BIBITE", name: "ACQUA 1/5 LT / 1 LT", price: 2.0, badge: "", desc: "Acqua minerale.", recipe: {formato_bibita: 1.0} },
+            { id: "bib_2", cat: "BIBITE", name: "COCA COLA / FANTA / SPRITE / THE", price: 3.0, badge: "", desc: "Lattina 0,33 L.", recipe: {formato_bibita: 1.0} },
+            { id: "bib_3", cat: "BIBITE", name: "BIRRA CARLSBERG (Spina 0.3l / 0.4l)", price: 4.0, badge: "SPINA", desc: "Lager, malto, bassa fermentazione.", recipe: {formato_bibita: 1.0} },
+            { id: "bib_4", cat: "BIBITE", name: "BIRRA GRIMBERGEN DOUBLE (Spina)", price: 5.0, badge: "SPINA", desc: "Birra rossa alta fermentazione.", recipe: {formato_bibita: 1.0} },
+            { id: "bib_5", cat: "BIBITE", name: "SPECIAL BREW / TUCHER WEIZEN", price: 5.0, badge: "SPINA", desc: "Doppio malto / Weizen.", recipe: {formato_bibita: 1.0} },
+            { id: "bib_6", cat: "BIBITE", name: "BIRRE IN BOTTIGLIA (Radler, Gluten Free, Tennent's)", price: 4.5, badge: "BOTTIGLIA", desc: "Selezione bottiglie.", recipe: {formato_bibita: 1.0} },
+
+            // VINI & CAFFÈ
+            { id: "vin_1", cat: "VINI", name: "VINI IN BOTTIGLIA 0.375l / 0.75l (Antonutti)", price: 11.0, badge: "DOC", desc: "Refosco, Ribolla Gialla, Sauvignon, Traminer Aromatico.", recipe: {formato_bibita: 1.0} },
+            { id: "vin_2", cat: "VINI", name: "AMARI E GRAPPA", price: 3.8, badge: "", desc: "Selezione di amari e grappe regionali.", recipe: {formato_bibita: 1.0} },
+            { id: "vin_3", cat: "VINI", name: "CAFFÈ ESPRESSO", price: 1.5, badge: "", desc: "Caffè espresso italiano.", recipe: {formato_bibita: 1.0} }
         ];
 
-        // Calcola in automatico il Food Cost di un prodotto basandosi sui prezzi correnti degli ingredienti
-        function calculateProductCost(item) {
+        // --- 3. GESTIONE STATO E LOCALSTORAGE ---
+        let ingredients = JSON.parse(localStorage.getItem('galleon_ingredients')) || defaultIngredients;
+        let products = JSON.parse(localStorage.getItem('galleon_products')) || defaultProducts;
+        let currentFilter = 'ALL';
+        let currentEditingProductId = null;
+
+        function saveData() {
+            localStorage.setItem('galleon_ingredients', JSON.stringify(ingredients));
+            localStorage.setItem('galleon_products', JSON.stringify(products));
+        }
+
+        function resetData() {
+            if(confirm("Vuoi davvero ripristinare i dati originali di fabbrica?")) {
+                localStorage.removeItem('galleon_ingredients');
+                localStorage.removeItem('galleon_products');
+                ingredients = JSON.parse(JSON.stringify(defaultIngredients));
+                products = JSON.parse(JSON.stringify(defaultProducts));
+                initApp();
+            }
+        }
+
+        function exportData() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({ingredients, products}, null, 2));
+            const dlAnchorElem = document.createElement('a');
+            dlAnchorElem.setAttribute("href", dataStr);
+            dlAnchorElem.setAttribute("download", "the_galleon_menu_data.json");
+            dlAnchorElem.click();
+        }
+
+        // --- 4. CALCOLO FOOD COST ---
+        function calculateProductFoodCost(product) {
             let totalCost = 0;
-            item.recipe.forEach(r => {
-                const ing = ingredientsDB[r.ing];
-                if (ing) {
-                    if (r.unit === 'g') {
-                        totalCost += (ing.cost / 1000) * r.qty;
-                    } else {
-                        totalCost += ing.cost * r.qty;
-                    }
+            if (!product.recipe) return 0;
+            for (let [ingKey, qty] of Object.entries(product.recipe)) {
+                if (ingredients[ingKey]) {
+                    totalCost += ingredients[ingKey].price * qty;
                 }
-            });
+            }
             return totalCost;
         }
 
-        function init() {
-            renderSidebar();
-            populateCategories();
-            renderAll();
+        // --- 5. RENDER INTERFACCIA ---
+        function initApp() {
+            renderIngredientsList();
+            renderMenu();
+            setupEventListeners();
         }
 
-        // Renderizza il menu laterale degli ingredienti
-        function renderSidebar() {
-            const list = document.getElementById('ingredients-list');
-            list.innerHTML = '';
-            Object.keys(ingredientsDB).forEach(name => {
-                const item = ingredientsDB[name];
-                list.innerHTML += `
-                    <div class="bg-slate-50 p-3 rounded-2xl border border-slate-200 space-y-1 hover:border-indigo-300 transition">
-                        <span class="font-bold text-slate-800 text-xs">${name}</span>
-                        <div class="flex items-center gap-2 pt-1">
-                            <span class="text-xs text-slate-500 font-bold">€</span>
-                            <input type="number" step="0.05" value="${item.cost.toFixed(2)}" onchange="updateIngredientCost('${name}', this.value)" class="w-24 p-1.5 text-xs font-bold border rounded-lg bg-white focus:ring-2 focus:ring-indigo-500">
-                            <span class="text-xs text-slate-400 font-semibold">/ ${item.unit}</span>
+        function renderIngredientsList() {
+            const container = document.getElementById('ingredientsListContainer');
+            const search = document.getElementById('searchIngredient').value.toLowerCase();
+            container.innerHTML = '';
+
+            for (let [key, ing] of Object.entries(ingredients)) {
+                if (ing.name.toLowerCase().includes(search)) {
+                    const div = document.createElement('div');
+                    div.className = "bg-gray-950 p-2.5 rounded-lg border border-gray-800 flex items-center justify-between gap-2";
+                    div.innerHTML = `
+                        <div class="flex-1 min-w-0">
+                            <p class="text-xs font-semibold text-gray-200 truncate" title="${ing.name}">${ing.name}</p>
+                            <span class="text-[10px] text-gray-400">Prezzo / ${ing.unit}</span>
                         </div>
+                        <div class="flex items-center gap-1">
+                            <span class="text-xs text-amber-500 font-bold">€</span>
+                            <input type="number" step="0.1" value="${ing.price}" onchange="updateIngredientPrice('${key}', this.value)" class="w-16 bg-gray-900 border border-gray-700 rounded px-1.5 py-1 text-xs text-right text-white focus:outline-none focus:border-amber-500">
+                        </div>
+                    `;
+                    container.appendChild(div);
+                }
+            }
+        }
+
+        function updateIngredientPrice(key, val) {
+            const num = parseFloat(val);
+            if (!isNaN(num) && num >= 0) {
+                ingredients[key].price = num;
+                saveData();
+                renderMenu();
+            }
+        }
+
+        function filterCategory(cat) {
+            currentFilter = cat;
+            document.querySelectorAll('.cat-btn').forEach(btn => {
+                btn.classList.remove('bg-amber-600', 'text-white');
+                btn.classList.add('bg-gray-800', 'text-gray-300');
+            });
+            event.target.classList.remove('bg-gray-800', 'text-gray-300');
+            event.target.classList.add('bg-amber-600', 'text-white');
+            renderMenu();
+        }
+
+        function renderMenu() {
+            const container = document.getElementById('menuContainer');
+            const searchProd = document.getElementById('searchProduct').value.toLowerCase();
+            container.innerHTML = '';
+
+            // Raggruppa per categoria
+            const categories = {};
+            products.forEach(p => {
+                if (currentFilter === 'ALL' || p.cat === currentFilter) {
+                    if (p.name.toLowerCase().includes(searchProd) || p.desc.toLowerCase().includes(searchProd)) {
+                        if (!categories[p.cat]) categories[p.cat] = [];
+                        categories[p.cat].push(p);
+                    }
+                }
+            });
+
+            if (Object.keys(categories).length === 0) {
+                container.innerHTML = `<div class="text-center py-12 text-gray-500 text-sm">Nessun piatto trovato con i criteri di ricerca.</div>`;
+                return;
+            }
+
+            for (let [catName, prods] of Object.entries(categories)) {
+                const section = document.createElement('div');
+                section.className = "space-y-4";
+                
+                let catTitle = catName;
+                if(catName === 'TORTE') catTitle = 'TORTE AL TESTO';
+                if(catName === 'PALA') catTitle = 'PIZZA ALLA PALA';
+                if(catName === 'ROSSE') catTitle = 'PIZZE ROSSE';
+                if(catName === 'BIANCHE') catTitle = 'PIZZE BIANCHE';
+                if(catName === 'HOTDOG') catTitle = 'HOT DOG';
+                if(catName === 'VINI') catTitle = 'VINI, AMARI & CAFFÈ';
+
+                section.innerHTML = `
+                    <div class="border-b border-gray-800 pb-2 flex items-center justify-between">
+                        <h2 class="text-base sm:text-lg font-black tracking-wide text-amber-400 flex items-center gap-2">
+                            <i class="fa-solid fa-utensils text-xs"></i> ${catTitle}
+                        </h2>
+                        <span class="text-xs text-gray-500 font-medium">${prods.length} prodotti</span>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        ${prods.map(p => {
+                            const foodCost = calculateProductFoodCost(p);
+                            const margin = p.price > 0 ? ((p.price - foodCost) / p.price) * 100 : 0;
+                            const marginColor = margin > 65 ? 'text-green-400' : (margin > 45 ? 'text-amber-400' : 'text-red-400');
+                            
+                            return `
+                                <div class="bg-gray-900 border border-gray-800 rounded-xl p-4 flex flex-col justify-between shadow hover:border-gray-700 transition">
+                                    <div>
+                                        <div class="flex items-start justify-between gap-2 mb-1">
+                                            <h3 class="font-bold text-sm text-gray-100">${p.name}</h3>
+                                            <span class="text-sm font-black text-amber-500 bg-amber-950/40 px-2 py-0.5 rounded border border-amber-800/40">€ ${p.price.toFixed(2)}</span>
+                                        </div>
+                                        ${p.badge ? `<span class="inline-block bg-gray-800 text-gray-300 text-[10px] font-semibold px-2 py-0.5 rounded mb-2 border border-gray-700">${p.badge}</span>` : ''}
+                                        <p class="text-xs text-gray-400 mb-4 line-clamp-3">${p.desc}</p>
+                                    </div>
+                                    <div class="pt-3 border-t border-gray-800 flex items-center justify-between text-xs">
+                                        <div class="space-y-0.5">
+                                            <div class="text-gray-400">Food Cost: <span class="text-gray-200 font-semibold">€ ${foodCost.toFixed(2)}</span></div>
+                                            <div class="text-gray-400">Margine: <span class="${marginColor} font-bold">${margin.toFixed(0)}%</span></div>
+                                        </div>
+                                        <button onclick="openProductModal('${p.id}')" class="bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white px-2.5 py-1.5 rounded-lg border border-gray-700 transition flex items-center gap-1.5">
+                                            <i class="fa-solid fa-pen text-[10px]"></i> Modifica
+                                        </button>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
                     </div>
                 `;
-            });
-        }
-
-        function updateIngredientCost(name, newCost) {
-            const val = parseFloat(newCost);
-            if (!isNaN(val) && val >= 0) {
-                ingredientsDB[name].cost = val;
-                renderAll(); // Ricalcola subito tutto il menu!
+                container.appendChild(section);
             }
         }
 
-        function addNewIngredient() {
-            const name = prompt("Nome del nuovo ingrediente:");
-            if (name && !ingredientsDB[name]) {
-                ingredientsDB[name] = { cost: 5.00, unit: "kg" };
-                renderSidebar();
-            }
+        // --- 6. MODALE MODIFICA PRODOTTO & RICETTA ---
+        function openProductModal(productId) {
+            currentEditingProductId = productId;
+            const product = products.find(p => p.id === productId);
+            if (!product) return;
+
+            document.getElementById('modalProductName').innerText = `Modifica Piatto: ${product.name}`;
+            document.getElementById('modalProductPrice').value = product.price;
+
+            renderModalIngredients(product);
+            document.getElementById('productModal').classList.remove('hidden');
         }
 
-        function toggleSidebar(open) {
-            const bg = document.getElementById('sidebar-bg');
-            const panel = document.getElementById('sidebar-panel');
-            if (open) {
-                bg.classList.remove('hidden');
-                setTimeout(() => { bg.classList.remove('opacity-0'); panel.classList.remove('translate-x-full'); }, 10);
-            } else {
-                bg.classList.add('opacity-0');
-                panel.classList.add('translate-x-full');
-                setTimeout(() => bg.classList.add('hidden'), 300);
-            }
+        function closeProductModal() {
+            document.getElementById('productModal').classList.add('hidden');
+            currentEditingProductId = null;
         }
 
-        function populateCategories() {
-            const select = document.getElementById('cat-filter');
-            const cats = [...new Set(menuData.map(i => i.categoria))];
-            select.innerHTML = '<option value="ALL">Tutte le Categorie</option>';
-            cats.forEach(c => select.innerHTML += `<option value="${c}">${c}</option>`);
-        }
-
-        function getFilteredData() {
-            const search = document.getElementById('search-input').value.toLowerCase();
-            const cat = document.getElementById('cat-filter').value;
-            return menuData.filter(i => {
-                const cost = calculateProductCost(i);
-                const margin = i.prezzo - cost;
-                const recipeStr = i.recipe.map(r => `${r.ing} ${r.qty}${r.unit}`).join(' ');
-                const matchSearch = i.prodotto.toLowerCase().includes(search) || i.categoria.toLowerCase().includes(search) || recipeStr.toLowerCase().includes(search);
-                const matchCat = (cat === 'ALL' || i.categoria === cat);
-                return matchSearch && matchCat;
-            });
-        }
-
-        function renderAll() {
-            const data = getFilteredData();
-
-            // Calcola costi e margini aggiornati
-            let totalMargin = 0, totalFC = 0, totalPrice = 0;
-            data.forEach(i => {
-                i.computedCost = calculateProductCost(i);
-                i.computedMargin = i.prezzo - i.computedCost;
-                i.computedFC = (i.computedCost / i.prezzo) * 100;
-                totalMargin += i.computedMargin;
-                totalFC += i.computedFC;
-                totalPrice += i.prezzo;
-            });
-
-            // KPI
-            document.getElementById('kpi-total-items').innerText = data.length;
-            document.getElementById('kpi-avg-price').innerText = '€ ' + (data.length ? totalPrice / data.length : 0).toFixed(2);
-            document.getElementById('kpi-avg-fc').innerText = (data.length ? totalFC / data.length : 0).toFixed(1) + '%';
-            document.getElementById('kpi-avg-margin').innerText = '€ ' + (data.length ? totalMargin / data.length : 0).toFixed(2);
-
-            // Quadranti
-            const avgM = data.length ? totalMargin / data.length : 0;
-            const avgV = data.length ? data.reduce((a, b) => a + b.volume, 0) / data.length : 0;
-
-            const stars = [], plowhorses = [], puzzles = [], dogs = [];
-
-            data.forEach(i => {
-                if (i.computedMargin >= avgM && i.volume >= avgV) stars.push(i);
-                else if (i.computedMargin < avgM && i.volume >= avgV) plowhorses.push(i);
-                else if (i.computedMargin >= avgM && i.volume < avgV) puzzles.push(i);
-                else dogs.push(i);
-            });
-
-            document.getElementById('badge-stars').innerText = stars.length;
-            document.getElementById('badge-plowhorses').innerText = plowhorses.length;
-            document.getElementById('badge-puzzles').innerText = puzzles.length;
-            document.getElementById('badge-dogs').innerText = dogs.length;
-
-            const makeCard = (i) => `
-                <div class="bg-white p-3.5 rounded-2xl border border-slate-200 space-y-2 shadow-sm hover:border-slate-300 transition">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <h4 class="font-bold text-slate-900 text-xs">${i.prodotto}</h4>
-                            <span class="text-[10px] text-slate-500 font-semibold uppercase">${i.categoria}</span>
-                        </div>
-                        <span class="text-xs font-black text-emerald-600">+€${i.computedMargin.toFixed(2)}</span>
-                    </div>
-                    <p class="text-[11px] text-slate-600 bg-slate-50 p-2 rounded-xl border border-slate-100 font-mono">
-                        <i class="fa-solid fa-utensils text-amber-500 mr-1"></i> ${i.recipe.map(r => `${r.ing} (${r.qty}${r.unit})`).join(' • ')}
-                    </p>
-                    <div class="flex items-center justify-between text-[11px] text-slate-500 pt-1 border-t border-slate-100">
-                        <span>Prezzo: <b>€${i.prezzo.toFixed(2)}</b> | FC: <b class="text-amber-700">€${i.computedCost.toFixed(2)}</b> (${i.computedFC.toFixed(1)}%)</span>
-                        <button onclick="editItem(${i.id})" class="text-amber-600 font-bold px-2 py-1 bg-amber-50 rounded-lg hover:bg-amber-100">Modifica</button>
-                    </div>
-                </div>
-            `;
-
-            document.getElementById('list-stars').innerHTML = stars.map(makeCard).join('') || '<p class="text-xs text-slate-400">Nessun prodotto</p>';
-            document.getElementById('list-plowhorses').innerHTML = plowhorses.map(makeCard).join('') || '<p class="text-xs text-slate-400">Nessun prodotto</p>';
-            document.getElementById('list-puzzles').innerHTML = puzzles.map(makeCard).join('') || '<p class="text-xs text-slate-400">Nessun prodotto</p>';
-            document.getElementById('list-dogs').innerHTML = dogs.map(makeCard).join('') || '<p class="text-xs text-slate-400">Nessun prodotto</p>';
-
-            // Table
-            document.getElementById('table-body').innerHTML = data.map(i => `
-                <tr class="hover:bg-slate-50 transition">
-                    <td class="p-3">
-                        <span class="font-bold text-slate-900 block text-sm">${i.prodotto}</span>
-                        <span class="text-[10px] text-slate-500 uppercase font-semibold">${i.categoria}</span>
-                    </td>
-                    <td class="p-3 font-mono text-[11px] text-slate-700">
-                        ${i.recipe.map(r => `${r.ing} (${r.qty}${r.unit})`).join(', ')}
-                    </td>
-                    <td class="p-3 text-right font-bold text-slate-900">€${i.prezzo.toFixed(2)}</td>
-                    <td class="p-3 text-right font-medium text-amber-700">€${i.computedCost.toFixed(2)} (${i.computedFC.toFixed(1)}%)</td>
-                    <td class="p-3 text-right font-bold text-emerald-600">€${i.computedMargin.toFixed(2)}</td>
-                    <td class="p-3 text-center space-x-2">
-                        <button onclick="editItem(${i.id})" class="text-slate-600 font-bold bg-slate-100 p-2 rounded-xl hover:bg-slate-200"><i class="fa-solid fa-pen"></i></button>
-                        <button onclick="deleteItem(${i.id})" class="text-rose-500 font-bold bg-rose-50 p-2 rounded-xl hover:bg-rose-100"><i class="fa-solid fa-trash"></i></button>
-                    </td>
-                </tr>
-            `).join('');
-        }
-
-        function switchView(view) {
-            document.getElementById('view-visual').classList.add('hidden');
-            document.getElementById('view-table').classList.add('hidden');
-            document.getElementById('btn-view-visual').className = 'px-4 py-2 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900';
-            document.getElementById('btn-view-table').className = 'px-4 py-2 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900';
-
-            if (view === 'visual') {
-                document.getElementById('view-visual').classList.remove('hidden');
-                document.getElementById('btn-view-visual').className = 'px-4 py-2 rounded-lg text-xs font-bold bg-white text-slate-900 shadow';
-            } else {
-                document.getElementById('view-table').classList.remove('hidden');
-                document.getElementById('btn-view-table').className = 'px-4 py-2 rounded-lg text-xs font-bold bg-white text-slate-900 shadow';
-            }
-        }
-
-        function editItem(id) {
-            const item = menuData.find(i => i.id === id);
-            if (!item) return;
-            document.getElementById('edit-id').value = item.id;
-            document.getElementById('edit-cat').value = item.categoria;
-            document.getElementById('edit-name').value = item.prodotto;
-            document.getElementById('edit-price').value = item.prezzo;
-            document.getElementById('edit-vol').value = item.volume;
-
-            const container = document.getElementById('recipe-ingredients-container');
+        function renderModalIngredients(product) {
+            const container = document.getElementById('modalIngredientsContainer');
             container.innerHTML = '';
-            item.recipe.forEach(r => addRecipeRow(r.ing, r.qty, r.unit));
 
-            document.getElementById('modal-item').classList.remove('hidden');
+            if (!product.recipe) product.recipe = {};
+
+            for (let [ingKey, qty] of Object.entries(product.recipe)) {
+                const ing = ingredients[ingKey];
+                if (!ing) continue;
+
+                const row = document.createElement('div');
+                row.className = "flex items-center justify-between gap-2 bg-gray-900 p-2 rounded-lg border border-gray-800";
+                row.innerHTML = `
+                    <span class="text-xs text-gray-200 flex-1 truncate">${ing.name} (${ing.unit})</span>
+                    <input type="number" step="0.01" value="${qty}" onchange="updateModalRecipeQty('${ingKey}', this.value)" class="w-20 bg-gray-950 border border-gray-700 rounded px-2 py-1 text-xs text-right text-white focus:outline-none focus:border-amber-500">
+                    <button onclick="removeIngredientFromProduct('${ingKey}')" class="text-red-400 hover:text-red-300 p-1 text-xs"><i class="fa-solid fa-trash"></i></button>
+                `;
+                container.appendChild(row);
+            }
         }
 
-        function addRecipeRow(selectedIng = '', qty = 100, unit = 'g') {
-            const container = document.getElementById('recipe-ingredients-container');
-            const rowId = Date.now() + Math.random();
-            let options = Object.keys(ingredientsDB).map(ing => `<option value="${ing}" ${ing === selectedIng ? 'selected' : ''}>${ing}</option>`).join('');
-
-            const rowHTML = `
-                <div id="row-${rowId}" class="flex items-center gap-2 bg-slate-50 p-2 rounded-xl border border-slate-200">
-                    <select class="ing-select w-1/2 p-1.5 text-xs bg-white border rounded-lg">${options}</select>
-                    <input type="number" value="${qty}" class="ing-qty w-1/4 p-1.5 text-xs border rounded-lg bg-white">
-                    <select class="ing-unit w-1/5 p-1.5 text-xs bg-white border rounded-lg">
-                        <option value="g" ${unit === 'g' ? 'selected' : ''}>g</option>
-                        <option value="pz" ${unit === 'pz' ? 'selected' : ''}>pz</option>
-                    </select>
-                    <button type="button" onclick="document.getElementById('row-${rowId}').remove()" class="text-rose-500 font-bold px-1.5">✕</button>
-                </div>
-            `;
-            container.insertAdjacentHTML('beforeend', rowHTML);
-        }
-
-        function openModal() {
-            document.getElementById('edit-id').value = '';
-            document.getElementById('item-form').reset();
-            document.getElementById('recipe-ingredients-container').innerHTML = '';
-            addRecipeRow();
-            document.getElementById('modal-item').classList.remove('hidden');
-        }
-
-        function closeModal() {
-            document.getElementById('modal-item').classList.add('hidden');
-        }
-
-        function saveItem(e) {
-            e.preventDefault();
-            const id = document.getElementById('edit-id').value;
-            const rows = document.querySelectorAll('#recipe-ingredients-container > div');
-            const recipe = [];
-
-            rows.forEach(r => {
-                const ing = r.querySelector('.ing-select').value;
-                const qty = parseFloat(r.querySelector('.ing-qty').value) || 0;
-                const unit = r.querySelector('.ing-unit').value;
-                recipe.push({ ing, qty, unit });
-            });
-
-            const newItem = {
-                id: id ? parseInt(id) : menuData.length + 1,
-                categoria: document.getElementById('edit-cat').value,
-                prodotto: document.getElementById('edit-name').value,
-                prezzo: parseFloat(document.getElementById('edit-price').value),
-                volume: parseInt(document.getElementById('edit-vol').value),
-                recipe: recipe
-            };
-
-            if (id) {
-                const idx = menuData.findIndex(i => i.id == id);
-                menuData[idx] = newItem;
+        function updateModalRecipeQty(ingKey, val) {
+            const product = products.find(p => p.id === currentEditingProductId);
+            if (!product) return;
+            const num = parseFloat(val);
+            if (!isNaN(num) && num > 0) {
+                product.recipe[ingKey] = num;
             } else {
-                menuData.push(newItem);
-            }
-
-            closeModal();
-            populateCategories();
-            renderAll();
-        }
-
-        function deleteItem(id) {
-            if (confirm('Vuoi eliminare questo prodotto dal menu?')) {
-                menuData = menuData.filter(i => i.id !== id);
-                renderAll();
+                delete product.recipe[ingKey];
             }
         }
 
-        function exportCSV() {
-            let csv = 'ID;Categoria;Prodotto;Prezzo;FoodCost;Margine;FC_Pct;Volume;Ricetta\n';
-            menuData.forEach(i => {
-                const cost = calculateProductCost(i);
-                const margin = i.prezzo - cost;
-                const fc = ((cost / i.prezzo) * 100).toFixed(1);
-                const rec = i.recipe.map(r => `${r.ing} (${r.qty}${r.unit})`).join(' + ');
-                csv += `${i.id};${i.categoria};${i.prodotto};${i.prezzo};${cost.toFixed(2)};${margin.toFixed(2)};${fc}%;${i.volume};"${rec}"\n`;
-            });
-            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.download = 'Menu_FoodCost_Galleon.csv';
-            link.click();
+        function removeIngredientFromProduct(ingKey) {
+            const product = products.find(p => p.id === currentEditingProductId);
+            if (!product) return;
+            delete product.recipe[ingKey];
+            renderModalIngredients(product);
         }
 
-        window.onload = init;
+        function addIngredientToProductModal() {
+            const product = products.find(p => p.id === currentEditingProductId);
+            if (!product) return;
+
+            // Seleziona primo ingrediente disponibile non ancora inserito
+            const availableKeys = Object.keys(ingredients).filter(k => !product.recipe[k]);
+            if (availableKeys.length === 0) {
+                alert("Tutti gli ingredienti sono già presenti nella ricetta!");
+                return;
+            }
+            product.recipe[availableKeys[0]] = 0.1;
+            renderModalIngredients(product);
+        }
+
+        function saveProductModal() {
+            const product = products.find(p => p.id === currentEditingProductId);
+            if (!product) return;
+
+            const newPrice = parseFloat(document.getElementById('modalProductPrice').value);
+            if (!isNaN(newPrice) && newPrice >= 0) {
+                product.price = newPrice;
+            }
+
+            saveData();
+            closeProductModal();
+            renderMenu();
+        }
+
+        // --- 7. EVENT LISTENERS E RESPONSIVE SIDEBAR ---
+        function setupEventListeners() {
+            const sidebar = document.getElementById('ingredientsSidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            const toggleBtn = document.getElementById('sidebarToggle');
+            const closeBtn = document.getElementById('sidebarClose');
+
+            function toggleSidebar() {
+                sidebar.classList.toggle('-translate-x-full');
+                overlay.classList.toggle('hidden');
+            }
+
+            toggleBtn.addEventListener('click', toggleSidebar);
+            closeBtn.addEventListener('click', toggleSidebar);
+            overlay.addEventListener('click', toggleSidebar);
+
+            document.getElementById('searchIngredient').addEventListener('input', renderIngredientsList);
+            document.getElementById('searchProduct').addEventListener('input', renderMenu);
+        }
+
+        // Avvio app all'caricamento
+        window.addEventListener('DOMContentLoaded', initApp);
     </script>
 </body>
 </html>

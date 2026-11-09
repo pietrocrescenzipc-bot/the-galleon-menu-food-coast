@@ -3,809 +3,676 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Galleon - Kasavana & Matrix Dashboard</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Food Cost Manager Professional</title>
+    <!-- Font & icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Chart.js per i grafici -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        .custom-scrollbar::-webkit-scrollbar { width: 8px; height: 8px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: #1e1b4b; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #818cf8; border-radius: 4px; }
-        .kid-card { border-radius: 1.5rem; transition: transform 0.2s ease, box-shadow 0.2s ease; }
-        .kid-card:hover { transform: translateY(-3px); box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.4); }
+        :root {
+            --bg-main: #0f172a;
+            --bg-card: #1e293b;
+            --bg-sidebar: #0b1120;
+            --accent-color: #f59e0b;
+            --accent-hover: #d97706;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-color: #334155;
+            --success: #10b981;
+            --danger: #ef4444;
+            --info: #3b82f6;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            display: flex;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* --- SIDEBAR & NAV --- */
+        .sidebar {
+            width: 260px;
+            background-color: var(--bg-sidebar);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            transition: all 0.3s ease;
+            z-index: 100;
+            position: fixed;
+            height: 100vh;
+        }
+
+        .sidebar.collapsed {
+            transform: translateX(-100%);
+        }
+
+        .brand {
+            padding: 20px;
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--accent-color);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .menu-list {
+            list-style: none;
+            padding: 15px 10px;
+            flex: 1;
+        }
+
+        .menu-item {
+            padding: 14px 18px;
+            margin-bottom: 6px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: var(--text-muted);
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .menu-item:hover, .menu-item.active {
+            background-color: rgba(245, 158, 11, 0.15);
+            color: var(--accent-color);
+        }
+
+        /* --- MAIN CONTENT AREA --- */
+        .main-wrapper {
+            flex: 1;
+            margin-left: 260px;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+
+        .main-wrapper.expanded {
+            margin-left: 0;
+        }
+
+        .top-navbar {
+            background-color: var(--bg-card);
+            padding: 15px 25px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            z-index: 90;
+        }
+
+        .toggle-btn {
+            background: none;
+            border: none;
+            color: var(--text-main);
+            font-size: 1.4rem;
+            cursor: pointer;
+            padding: 5px;
+        }
+
+        .container {
+            padding: 25px;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* --- CARDS & TABLES --- */
+        .card {
+            background-color: var(--bg-card);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid var(--border-color);
+            margin-bottom: 25px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .btn {
+            background-color: var(--accent-color);
+            color: #000;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: background 0.2s;
+        }
+
+        .btn:hover {
+            background-color: var(--accent-hover);
+        }
+
+        .btn-secondary {
+            background-color: #334155;
+            color: var(--text-main);
+        }
+        .btn-secondary:hover { background-color: #475569; }
+
+        .form-control {
+            background-color: #0f172a;
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 10px 14px;
+            border-radius: 6px;
+            outline: none;
+            width: 100%;
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th, td {
+            padding: 14px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        th {
+            background-color: rgba(15, 23, 42, 0.6);
+            color: var(--text-muted);
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.05em;
+        }
+
+        .badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        .badge-success { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+        .badge-warning { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+        .badge-danger { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+
+        /* --- AI CHATBOT --- */
+        .chat-box {
+            height: 400px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 15px;
+            background: #0f172a;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .chat-msg {
+            max-width: 80%;
+            padding: 12px 16px;
+            border-radius: 12px;
+            line-height: 1.5;
+            font-size: 0.95rem;
+        }
+        .chat-msg.user {
+            align-self: flex-end;
+            background: var(--accent-color);
+            color: #000;
+            font-weight: 500;
+        }
+        .chat-msg.ai {
+            align-self: flex-start;
+            background: #1e293b;
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+        }
+
+        /* Responsive Breakpoints */
+        @media (max-width: 768px) {
+            .sidebar { transform: translateX(-100%); }
+            .sidebar.active { transform: translateX(0); }
+            .main-wrapper { margin-left: 0 !important; }
+            .container { padding: 15px; }
+        }
     </style>
 </head>
-<body class="bg-indigo-950 text-white font-sans antialiased min-h-screen flex flex-col">
+<body>
 
-    <!-- HEADER COLORATO -->
-    <header class="bg-indigo-900 border-b-4 border-indigo-700 sticky top-0 z-40 px-4 py-3 flex flex-wrap items-center justify-between shadow-xl gap-3">
-        <div class="flex items-center space-x-3">
-            <span class="bg-amber-400 text-indigo-950 p-2.5 rounded-2xl text-xl shadow-inner font-black">
-                <i class="fa-solid fa-anchor"></i>
-            </span>
-            <div>
-                <h1 class="text-xl sm:text-2xl font-black tracking-wider text-amber-300 drop-shadow">
-                    THE GALLEON <span class="text-xs bg-pink-600 text-white px-2.5 py-0.5 rounded-full uppercase">Kasavana Simple</span>
-                </h1>
-                <p class="text-xs text-indigo-200">Menu, Matrice Dosi & Grafico Immediato</p>
-            </div>
+    <!-- SIDEBAR -->
+    <aside class="sidebar" id="sidebar">
+        <div class="brand">
+            <i class="fa-solid fa-utensils"></i> FoodCost Pro
         </div>
+        <ul class="menu-list">
+            <li class="menu-item active" onclick="switchTab('products')">
+                <i class="fa-solid fa-pizza-slice"></i> Prodotti & Ricette
+            </li>
+            <li class="menu-item" onclick="switchTab('ingredients')">
+                <i class="fa-solid fa-carrot"></i> Materie Prime & Market
+            </li>
+            <li class="menu-item" onclick="switchTab('analytics')">
+                <i class="fa-solid fa-chart-pie"></i> Grafici & Analisi
+            </li>
+            <li class="menu-item" onclick="switchTab('ai-assistant')">
+                <i class="fa-solid fa-robot"></i> AI Chef Assistant
+            </li>
+        </ul>
+    </aside>
 
-        <div class="flex items-center gap-2 flex-wrap">
-            <button id="sidebarToggle" class="bg-emerald-500 hover:bg-emerald-400 text-indigo-950 font-black px-4 py-2.5 rounded-2xl text-sm transition shadow-lg flex items-center gap-2 cursor-pointer border-b-4 border-emerald-700 active:border-b-0 active:translate-y-1">
-                <i class="fa-solid fa-boxes-stacked text-lg"></i> <span>Prezzi Ingredienti</span>
-            </button>
-            <button id="matrixToggle" class="bg-pink-500 hover:bg-pink-400 text-white font-black px-4 py-2.5 rounded-2xl text-sm transition shadow-lg flex items-center gap-2 cursor-pointer border-b-4 border-pink-700 active:border-b-0 active:translate-y-1">
-                <i class="fa-solid fa-table-cells text-lg"></i> <span>Matrice Dosi</span>
-            </button>
-            <button id="chartToggle" class="bg-purple-500 hover:bg-purple-400 text-white font-black px-4 py-2.5 rounded-2xl text-sm transition shadow-lg flex items-center gap-2 cursor-pointer border-b-4 border-purple-700 active:border-b-0 active:translate-y-1">
-                <i class="fa-solid fa-chart-pie text-lg"></i> <span>Grafico Facile</span>
-            </button>
-            <button onclick="exportData()" class="bg-indigo-800 hover:bg-indigo-700 text-indigo-200 text-xs px-3 py-2.5 rounded-xl border border-indigo-600 transition" title="Esporta Data">
-                <i class="fa-solid fa-download"></i>
-            </button>
-            <button onclick="resetData()" class="bg-rose-900 hover:bg-rose-800 text-rose-200 text-xs px-3 py-2.5 rounded-xl border border-rose-700 transition" title="Reset">
-                <i class="fa-solid fa-rotate-left"></i>
-            </button>
-        </div>
-    </header>
+    <!-- MAIN CONTENT -->
+    <div class="main-wrapper" id="mainWrapper">
+        <header class="top-navbar">
+            <button class="toggle-btn" onclick="toggleSidebar()"><i class="fa-solid fa-bars"></i></button>
+            <h3 id="pageTitle" style="font-size: 1.1rem; color: var(--accent-color);">Gestione Prodotti e Food Cost</h3>
+            <div><span class="badge badge-success"><i class="fa-solid fa-check"></i> Dati 2025 Sincronizzati</span></div>
+        </header>
 
-    <div class="flex-1 flex overflow-hidden relative">
-
-        <!-- SIDEBAR INGREDIENTI BASE -->
-        <aside id="ingredientsSidebar" class="fixed inset-y-0 left-0 z-50 w-80 sm:w-96 bg-indigo-900 border-r-4 border-indigo-700 transform -translate-x-full transition-transform duration-300 ease-in-out flex flex-col shadow-2xl">
-            <div class="p-4 border-b-2 border-indigo-800 flex items-center justify-between bg-indigo-950">
-                <h2 class="font-black text-amber-300 text-base flex items-center gap-2">
-                    <i class="fa-solid fa-box-open"></i> Prezzi Ingredienti
-                </h2>
-                <button id="sidebarClose" class="text-indigo-300 hover:text-white p-2 text-xl cursor-pointer">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
-            </div>
-            <div class="p-3 bg-indigo-900/80 border-b border-indigo-800">
-                <input type="text" id="searchIngredient" placeholder="🔍 Cerca ingrediente..." class="w-full bg-indigo-950 border-2 border-indigo-700 rounded-xl px-4 py-2 text-sm text-white placeholder-indigo-400 focus:outline-none focus:border-amber-400 font-medium">
-            </div>
-            <div id="ingredientsListContainer" class="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-2.5">
-                <!-- Popolato via JS -->
-            </div>
-            <div class="p-3 border-t-2 border-indigo-800 bg-indigo-950 text-xs text-indigo-300 text-center font-bold">
-                💡 Modifica i costi unitari per ricalcolare istantaneamente margini e grafico!
-            </div>
-        </aside>
-
-        <!-- OVERLAY -->
-        <div id="sidebarOverlay" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 hidden"></div>
-
-        <!-- MAIN CONTENT -->
-        <main class="flex-1 overflow-y-auto custom-scrollbar p-4 sm:p-6 lg:p-8 bg-indigo-950">
-            <div class="max-w-7xl mx-auto space-y-6">
-
-                <!-- PANNELLO GRAFICO KASAVANA SEMPLIFICATO -->
-                <div id="chartSection" class="hidden bg-indigo-900/90 rounded-3xl border-4 border-purple-500 p-5 space-y-5 shadow-2xl">
-                    <div class="flex items-center justify-between border-b-2 border-indigo-800 pb-3">
-                        <div>
-                            <h2 class="text-lg sm:text-xl font-black text-purple-300 flex items-center gap-3">
-                                <i class="fa-solid fa-chart-pie text-amber-400 text-2xl"></i> Grafico Kasavana Semplice & Immediato
-                            </h2>
-                            <p class="text-xs text-indigo-200 mt-1">Scopri subito quali piatti ti fanno guadagnare di più e quali vendi di più!</p>
-                        </div>
-                        <button onclick="toggleChartView()" class="bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs px-4 py-2 rounded-xl shadow cursor-pointer">✕ Chiudi</button>
-                    </div>
-
-                    <!-- QUADRANTI KASAVANA BIG EMOJI CARDS -->
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-center font-black">
-                        <div class="bg-emerald-950/90 border-4 border-emerald-500 p-4 rounded-2xl shadow">
-                            <span class="text-2xl block mb-1">⭐</span>
-                            <span class="text-emerald-300 block text-sm uppercase">STELLE</span>
-                            <span class="text-[10px] text-emerald-200 font-bold block">Alto Margine + Alta Vendita</span>
-                            <div id="countStars" class="text-2xl text-emerald-400 mt-1">0</div>
-                        </div>
-                        <div class="bg-amber-950/90 border-4 border-amber-500 p-4 rounded-2xl shadow">
-                            <span class="text-2xl block mb-1">🐎</span>
-                            <span class="text-amber-300 block text-sm uppercase">CAVALLI DA TIRO</span>
-                            <span class="text-[10px] text-amber-200 font-bold block">Basso Margine + Alta Vendita</span>
-                            <div id="countPlowhorses" class="text-2xl text-amber-400 mt-1">0</div>
-                        </div>
-                        <div class="bg-blue-950/90 border-4 border-blue-500 p-4 rounded-2xl shadow">
-                            <span class="text-2xl block mb-1">🧩</span>
-                            <span class="text-blue-300 block text-sm uppercase">REBUS</span>
-                            <span class="text-[10px] text-blue-200 font-bold block">Alto Margine + Bassa Vendita</span>
-                            <div id="countPuzzles" class="text-2xl text-blue-400 mt-1">0</div>
-                        </div>
-                        <div class="bg-rose-950/90 border-4 border-rose-500 p-4 rounded-2xl shadow">
-                            <span class="text-2xl block mb-1">🐶</span>
-                            <span class="text-rose-300 block text-sm uppercase">ZAVORRE</span>
-                            <span class="text-[10px] text-rose-200 font-bold block">Basso Margine + Bassa Vendita</span>
-                            <div id="countDogs" class="text-2xl text-rose-400 mt-1">0</div>
+        <div class="container">
+            
+            <!-- TAB 1: PRODOTTI & RICETTE -->
+            <div id="products" class="tab-content active">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Menu Prodotti</h2>
+                        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                            <input type="text" id="searchProduct" class="form-control" placeholder="Cerca prodotto (es. Belize)..." onkeyup="filterProducts()" style="width: 220px;">
+                            <button class="btn" onclick="openAddProductModal()"><i class="fa-solid fa-plus"></i> Nuovo Prodotto</button>
                         </div>
                     </div>
-
-                    <!-- AREA CANVAS CHART.JS -->
-                    <div class="bg-indigo-950 p-4 rounded-2xl border-2 border-indigo-800 relative h-96">
-                        <canvas id="kasavanaChart"></canvas>
-                    </div>
-
-                    <!-- GUIDA IMMEDIATA SOTTO AL GRAFICO -->
-                    <div class="bg-indigo-950/80 p-4 rounded-2xl border border-indigo-800 grid grid-cols-1 md:grid-cols-4 gap-3 text-xs">
-                        <div class="text-emerald-300"><strong class="block text-emerald-400">⭐ Stelle:</strong> I tuoi piatti migliori. Promuovili sempre!</div>
-                        <div class="text-amber-300"><strong class="block text-amber-400">🐎 Cavalli da tiro:</strong> Molto richiesti. Aumenta leggermente il prezzo.</div>
-                        <div class="text-blue-300"><strong class="block text-blue-400">🧩 Rebus:</strong> Utili ma poco ordinati. Migliora la descrizione o da' più visibilità.</div>
-                        <div class="text-rose-300"><strong class="block text-rose-400">🐶 Zavorre:</strong> Rendono e vendono poco. Valuta di sostituirli.</div>
-                    </div>
-                </div>
-
-                <!-- VISTA TABELLA MATRICE DOSI -->
-                <div id="matrixSection" class="hidden bg-indigo-900/90 rounded-3xl border-4 border-pink-500 p-5 space-y-4 shadow-2xl">
-                    <div class="flex items-center justify-between border-b-2 border-indigo-800 pb-3">
-                        <h2 class="text-lg sm:text-xl font-black text-pink-300 flex items-center gap-3">
-                            <i class="fa-solid fa-table-cells text-amber-400 text-2xl"></i> Matrice Ingredienti & Dosi Ricette
-                        </h2>
-                        <button onclick="toggleMatrixView()" class="bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs px-4 py-2 rounded-xl shadow cursor-pointer">✕ Chiudi Matrice</button>
-                    </div>
-                    <div class="overflow-x-auto custom-scrollbar max-h-[60vh] rounded-2xl border-2 border-indigo-800">
-                        <table id="matrixTable" class="w-full text-left text-xs border-collapse bg-indigo-950">
-                            <!-- Popolato via JS -->
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Prodotto</th>
+                                    <th>Categoria</th>
+                                    <th>Prezzo Vendita (€)</th>
+                                    <th>Food Cost (€)</th>
+                                    <th>Incidenza %</th>
+                                    <th>Margine (€)</th>
+                                    <th>Azioni</th>
+                                </tr>
+                            </thead>
+                            <tbody id="productsTableBody">
+                                <!-- Popolato dinamicamente -->
+                            </tbody>
                         </table>
                     </div>
                 </div>
-
-                <!-- BARRA DI RICERCA & FILTRI CATEGORIE -->
-                <div class="bg-indigo-900/80 p-4 rounded-3xl border-2 border-indigo-700 shadow-xl flex flex-col gap-4">
-                    <div class="relative w-full">
-                        <i class="fa-solid fa-magnifying-glass absolute left-4 top-3.5 text-indigo-400 text-base"></i>
-                        <input type="text" id="searchProduct" placeholder="Cerca pizza, hamburger, dolce o ingrediente nel menu..." class="w-full bg-indigo-950 border-2 border-indigo-700 rounded-2xl pl-11 pr-4 py-3 text-sm text-white placeholder-indigo-400 focus:outline-none focus:border-amber-400 font-bold">
-                    </div>
-                    
-                    <div class="flex items-center gap-2 overflow-x-auto pb-2 custom-scrollbar" id="categoryFilters">
-                        <button onclick="filterCategory('ALL')" class="cat-btn active bg-amber-400 text-indigo-950 font-black text-xs px-4 py-2.5 rounded-2xl whitespace-nowrap shadow transition cursor-pointer border-b-4 border-amber-600">🌟 Tutti</button>
-                        <button onclick="filterCategory('ANTIPASTI')" class="cat-btn bg-indigo-800 hover:bg-indigo-700 text-indigo-200 font-bold text-xs px-4 py-2.5 rounded-2xl whitespace-nowrap shadow transition cursor-pointer">🥗 Antipasti</button>
-                        <button onclick="filterCategory('TORTE')" class="cat-btn bg-indigo-800 hover:bg-indigo-700 text-indigo-200 font-bold text-xs px-4 py-2.5 rounded-2xl whitespace-nowrap shadow transition cursor-pointer">🍞 Torte al Testo</button>
-                        <button onclick="filterCategory('PALA')" class="cat-btn bg-indigo-800 hover:bg-indigo-700 text-indigo-200 font-bold text-xs px-4 py-2.5 rounded-2xl whitespace-nowrap shadow transition cursor-pointer">🍕 Pala</button>
-                        <button onclick="filterCategory('ROSSE')" class="cat-btn bg-indigo-800 hover:bg-indigo-700 text-indigo-200 font-bold text-xs px-4 py-2.5 rounded-2xl whitespace-nowrap shadow transition cursor-pointer">🍅 Pizze Rosse</button>
-                        <button onclick="filterCategory('BIANCHE')" class="cat-btn bg-indigo-800 hover:bg-indigo-700 text-indigo-200 font-bold text-xs px-4 py-2.5 rounded-2xl whitespace-nowrap shadow transition cursor-pointer">🧀 Pizze Bianche</button>
-                        <button onclick="filterCategory('HAMBURGER')" class="cat-btn bg-indigo-800 hover:bg-indigo-700 text-indigo-200 font-bold text-xs px-4 py-2.5 rounded-2xl whitespace-nowrap shadow transition cursor-pointer">🍔 Hamburger</button>
-                        <button onclick="filterCategory('TAGLIERI')" class="cat-btn bg-indigo-800 hover:bg-indigo-700 text-indigo-200 font-bold text-xs px-4 py-2.5 rounded-2xl whitespace-nowrap shadow transition cursor-pointer">🥓 Taglieri</button>
-                        <button onclick="filterCategory('PANINI')" class="cat-btn bg-indigo-800 hover:bg-indigo-700 text-indigo-200 font-bold text-xs px-4 py-2.5 rounded-2xl whitespace-nowrap shadow transition cursor-pointer">🥪 Panini</button>
-                        <button onclick="filterCategory('PIADINE')" class="cat-btn bg-indigo-800 hover:bg-indigo-700 text-indigo-200 font-bold text-xs px-4 py-2.5 rounded-2xl whitespace-nowrap shadow transition cursor-pointer">🌮 Piadine</button>
-                        <button onclick="filterCategory('HOTDOG')" class="cat-btn bg-indigo-800 hover:bg-indigo-700 text-indigo-200 font-bold text-xs px-4 py-2.5 rounded-2xl whitespace-nowrap shadow transition cursor-pointer">🌭 Hot Dog</button>
-                        <button onclick="filterCategory('FRIGGITORIA')" class="cat-btn bg-indigo-800 hover:bg-indigo-700 text-indigo-200 font-bold text-xs px-4 py-2.5 rounded-2xl whitespace-nowrap shadow transition cursor-pointer">🍟 Friggitoria</button>
-                        <button onclick="filterCategory('DOLCI')" class="cat-btn bg-indigo-800 hover:bg-indigo-700 text-indigo-200 font-bold text-xs px-4 py-2.5 rounded-2xl whitespace-nowrap shadow transition cursor-pointer">🍰 Dolci</button>
-                        <button onclick="filterCategory('BIBITE')" class="cat-btn bg-indigo-800 hover:bg-indigo-700 text-indigo-200 font-bold text-xs px-4 py-2.5 rounded-2xl whitespace-nowrap shadow transition cursor-pointer">🥤 Bibite</button>
-                        <button onclick="filterCategory('VINI')" class="cat-btn bg-indigo-800 hover:bg-indigo-700 text-indigo-200 font-bold text-xs px-4 py-2.5 rounded-2xl whitespace-nowrap shadow transition cursor-pointer">🍷 Vini & Caffè</button>
-                    </div>
-                </div>
-
-                <!-- CONTENITORE MENU -->
-                <div id="menuContainer" class="space-y-10">
-                    <!-- Popolato via JS -->
-                </div>
-
             </div>
-        </main>
-    </div>
 
-    <!-- MODALE MODIFICA PIATTO & DOSI RICETTA -->
-    <div id="productModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-indigo-900 border-4 border-amber-400 rounded-3xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
-            <div class="p-4 border-b-2 border-indigo-800 flex items-center justify-between bg-indigo-950">
-                <h3 id="modalProductName" class="font-black text-amber-300 text-base sm:text-lg">Modifica Piatto</h3>
-                <button onclick="closeProductModal()" class="text-indigo-300 hover:text-white p-2 text-xl cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
-            </div>
-            <div class="p-6 overflow-y-auto custom-scrollbar space-y-4 flex-1">
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-xs font-black text-indigo-200 mb-1 uppercase tracking-wide">Prezzo Vendita (€)</label>
-                        <input type="number" step="0.5" id="modalProductPrice" class="w-full bg-indigo-950 border-2 border-indigo-700 rounded-2xl px-4 py-2.5 text-base text-white font-black focus:outline-none focus:border-amber-400">
+            <!-- TAB 2: MATERIE PRIME & PREZZI SUPERMERCATO -->
+            <div id="ingredients" class="tab-content">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Materie Prime & Prezzi di Riferimento</h2>
+                        <div style="display:flex; gap:10px;">
+                            <input type="text" id="searchIngr" class="form-control" placeholder="Cerca ingrediente (es. Mozzarella)..." onkeyup="filterIngredients()" style="width: 250px;">
+                        </div>
                     </div>
-                    <div>
-                        <label class="block text-xs font-black text-indigo-200 mb-1 uppercase tracking-wide">Popolarità (Stima Vendite)</label>
-                        <input type="number" step="1" id="modalProductPopularity" class="w-full bg-indigo-950 border-2 border-indigo-700 rounded-2xl px-4 py-2.5 text-base text-white font-black focus:outline-none focus:border-amber-400">
+                    <p style="color: var(--text-muted); margin-bottom: 15px; font-size: 0.9rem;">
+                        <i class="fa-solid fa-circle-info"></i> <strong>Nota:</strong> Il <i>Prezzo Supermercato</i> viene visualizzato esclusivamente come **riferimento di mercato/benchmark** e non altera direttamente la ricetta a meno che non aggiorni il costo unitario reale.
+                    </p>
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Ingrediente</th>
+                                    <th>Unità</th>
+                                    <th>Costo Reale/Unità (€)</th>
+                                    <th>Riferimento Supermercato (€)</th>
+                                    <th>Fornitore</th>
+                                    <th>Azioni</th>
+                                </tr>
+                            </thead>
+                            <tbody id="ingredientsTableBody">
+                                <!-- Popolato dinamicamente -->
+                            </tbody>
+                        </table>
                     </div>
-                </div>
-                <div>
-                    <label class="block text-xs font-black text-indigo-200 mb-1 uppercase tracking-wide">Ingredienti della Ricetta (Dosi)</label>
-                    <div id="modalIngredientsContainer" class="space-y-2 border-2 border-indigo-800 rounded-2xl p-3 bg-indigo-950">
-                        <!-- Tabella ingredienti del piatto -->
-                    </div>
-                </div>
-                <div class="pt-2">
-                    <button onclick="addIngredientToProductModal()" class="bg-indigo-800 hover:bg-indigo-700 text-amber-300 font-black text-xs px-4 py-2.5 rounded-2xl border-2 border-indigo-600 transition flex items-center gap-2 cursor-pointer shadow">
-                        <i class="fa-solid fa-plus"></i> Aggiungi Ingrediente alla Ricetta
-                    </button>
                 </div>
             </div>
-            <div class="p-4 border-t-2 border-indigo-800 bg-indigo-950 flex justify-end gap-3">
-                <button onclick="closeProductModal()" class="bg-indigo-800 hover:bg-indigo-700 text-white font-bold text-xs px-5 py-2.5 rounded-xl transition cursor-pointer">Annulla</button>
-                <button onclick="saveProductModal()" class="bg-amber-400 hover:bg-amber-300 text-indigo-950 font-black text-xs px-6 py-2.5 rounded-xl transition shadow cursor-pointer">Salva Tutto</button>
+
+            <!-- TAB 3: GRAFICI & ANALISI -->
+            <div id="analytics" class="tab-content">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px;">
+                    <div class="card">
+                        <h3>Incidenza Food Cost % per Categoria</h3>
+                        <div style="position: relative; height:300px; margin-top:15px;">
+                            <canvas id="chartCategoryFC"></canvas>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <h3>Top 5 Prodotti per Margine (€)</h3>
+                        <div style="position: relative; height:300px; margin-top:15px;">
+                            <canvas id="chartTopMargin"></canvas>
+                        </div>
+                    </div>
+                </div>
             </div>
+
+            <!-- TAB 4: AI CHEF ASSISTANT -->
+            <div id="ai-assistant" class="tab-content">
+                <div class="card">
+                    <div class="card-header">
+                        <h2><i class="fa-solid fa-robot"></i> AI Food Cost Specialist</h2>
+                    </div>
+                    <p style="color: var(--text-muted); margin-bottom: 15px; font-size: 0.9rem;">
+                        Fai qualsiasi domanda sulla gestione del menù, ottimizzazione del food cost o calcoli sui margini.
+                    </p>
+                    <div class="chat-box" id="chatBox">
+                        <div class="chat-msg ai">
+                            Ciao! Sono il tuo assistente esperto in <strong>Food Cost & Menu Engineering</strong>. <br>
+                            Posso analizzare i tuoi piatti (es. <em>Belize</em>, <em>Haity</em>), darti consigli su come incrementare i margini o calcolare i prezzi di vendita ideali. Chiedimi qualsiasi cosa!
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 10px; margin-top: 15px;">
+                        <input type="text" id="aiInput" class="form-control" placeholder="Es: Come posso ridurre il Food Cost della pizza Belize?" onkeypress="if(event.key==='Enter') askAI()">
+                        <button class="btn" onclick="askAI()"><i class="fa-solid fa-paper-plane"></i> Invia</button>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </div>
 
-    <!-- LOGICA APPLICAZIONE -->
     <script>
-        // --- INGREDIENTI BASE ---
-        const defaultIngredients = {
-            "farina": { name: "Farina / Impasto Base", unit: "kg", price: 1.80 },
-            "farina_soia": { name: "Farina di Soia", unit: "kg", price: 3.50 },
-            "mozzarella": { name: "Mozzarella Fior di Latte", unit: "kg", price: 7.50 },
-            "mozzarella_bufala": { name: "Mozzarella di Bufala", unit: "kg", price: 11.00 },
-            "stracciatella": { name: "Stracciatella Fresca", unit: "kg", price: 10.00 },
-            "burrata": { name: "Burrata Fresca", unit: "kg", price: 12.00 },
-            "fontina": { name: "Fontina Valdostana", unit: "kg", price: 12.00 },
-            "provola": { name: "Provola Affumicata", unit: "kg", price: 9.00 },
-            "gorgonzola": { name: "Gorgonzola", unit: "kg", price: 9.50 },
-            "quattro_formaggi": { name: "Mix 4 Formaggi", unit: "kg", price: 10.00 },
-            "parmigiano": { name: "Grana / Parmigiano", unit: "kg", price: 14.00 },
-            "pecorino": { name: "Pecorino Nostrano", unit: "kg", price: 13.00 },
-            "stracchino": { name: "Stracchino", unit: "kg", price: 8.50 },
-            "pomodoro": { name: "Salsa / Pomodoro Pachino", unit: "kg", price: 2.50 },
-            "pomodori_secchi": { name: "Pomodori Secchi / Semi Secchi", unit: "kg", price: 9.00 },
-            "prosciutto_crudo": { name: "Prosciutto Crudo", unit: "kg", price: 18.00 },
-            "prosciutto_cotto": { name: "Prosciutto Cotto", unit: "kg", price: 9.00 },
-            "bresaola": { name: "Bresaola", unit: "kg", price: 22.00 },
-            "speck": { name: "Speck", unit: "kg", price: 14.00 },
-            "mortadella": { name: "Mortadella al Pistacchio", unit: "kg", price: 11.00 },
-            "sella_san_venanzo": { name: "Sella di San Venanzo", unit: "kg", price: 16.00 },
-            "salame_piccante": { name: "Salame Piccante", unit: "kg", price: 13.00 },
-            "salame": { name: "Salame / Capocollo", unit: "kg", price: 12.00 },
-            "pancetta": { name: "Pancetta / Bacon", unit: "kg", price: 11.00 },
-            "lardo": { name: "Lardo di Colonnata", unit: "kg", price: 18.00 },
-            "salsiccia": { name: "Salsiccia Fresca / Secca", unit: "kg", price: 8.50 },
-            "nduja": { name: "Crema di 'Nduja Calabrese", unit: "kg", price: 12.00 },
-            "pollo": { name: "Petto di Pollo / Cotoletta", unit: "kg", price: 9.00 },
-            "manzo_chianina": { name: "Carne Chianina / Manzo / Angus", unit: "kg", price: 15.00 },
-            "fassona": { name: "Carne Fassona Piemontese", unit: "kg", price: 18.00 },
-            "wurstel": { name: "Wurstel di Suino", unit: "kg", price: 7.00 },
-            "salmone": { name: "Salmone Affumicato", unit: "kg", price: 22.00 },
-            "gamberetti": { name: "Gamberetti", unit: "kg", price: 14.00 },
-            "alici": { name: "Alici Sotto Sale / Olio", unit: "kg", price: 15.00 },
-            "verdure_grigliate": { name: "Verdure Grigliate / Miste", unit: "kg", price: 5.00 },
-            "verdure_fritte": { name: "Verdure Fritte / Pastellate", unit: "kg", price: 5.00 },
-            "patate": { name: "Patate / Patatine Fritte", unit: "kg", price: 2.00 },
-            "funghi": { name: "Funghi Champignon / Porcini", unit: "kg", price: 7.00 },
-            "tartufo": { name: "Crema / Salsa Tartufata", unit: "kg", price: 25.00 },
-            "zucca": { name: "Crema di Zucca Gialla", unit: "kg", price: 6.00 },
-            "broccoli": { name: "Broccoli Saltati", unit: "kg", price: 5.00 },
-            "cipolla": { name: "Cipolla / Caramellata", unit: "kg", price: 3.00 },
-            "rucola": { name: "Rucola & Insalata", unit: "kg", price: 4.00 },
-            "frutta_secca": { name: "Noci & Granella di Pistacchio", unit: "kg", price: 20.00 },
-            "pane_panino": { name: "Pane Artigianale / Torta al Testo (Pz)", unit: "pz", price: 0.80 },
-            "uova": { name: "Uova", unit: "pz", price: 0.25 },
-            "salse_varie": { name: "Maionese / Ketchup / Salse", unit: "kg", price: 4.00 },
-            "formato_bibita": { name: "Bibita / Bottiglia / Birra (Pz)", unit: "pz", price: 1.20 }
-        };
-
-        // --- PRODOTTI CON POPOLARITÀ KASAVANA ---
-        const defaultProducts = [
-            { id: "ant_1", cat: "ANTIPASTI", name: "MARTINICA", price: 12.0, sales: 65, badge: "NUOVO / VEGETARIANO", desc: "Verdure grigliate, Verdure fritte, Verdure ripiene, Crostini misti. Servito con Torta al Testo.", recipe: {verdure_grigliate: 0.2, verdure_fritte: 0.15, pane_panino: 1.0} },
-            { id: "ant_2", cat: "ANTIPASTI", name: "MONTSERRAT", price: 12.0, sales: 80, badge: "NUOVO", desc: "Bresaola, Rucola, Grana, Prosciutto Cotto, Funghi Champignon, Pomodoro Pachino. Servito con Torta al Testo.", recipe: {bresaola: 0.08, prosciutto_cotto: 0.08, rucola: 0.05, parmigiano: 0.03, funghi: 0.05, pomodoro: 0.05, pane_panino: 1.0} },
-            { id: "ant_3", cat: "ANTIPASTI", name: "NICARAGUA", price: 9.0, sales: 45, badge: "NUOVO", desc: "3 Bruschette (4 Formaggi, Tartufata, Speck) + 3 Bruschette (Mozzarella, Salsicce, Zucchine, Olio aromatizzato).", recipe: {pane_panino: 1.5, quattro_formaggi: 0.05, tartufo: 0.02, speck: 0.04, mozzarella: 0.05, salsiccia: 0.05} },
-            { id: "ant_4", cat: "ANTIPASTI", name: "TAGLIERE NOSTRANO", price: 10.0, sales: 110, badge: "", desc: "Selezione di affettati e formaggi accompagnato da Torta al Testo.", recipe: {prosciutto_crudo: 0.05, sella_san_venanzo: 0.05, salame: 0.05, pecorino: 0.05, gorgonzola: 0.05, pane_panino: 1.0} },
-            { id: "torta_1", cat: "TORTE", name: "TORTA AL TESTO", price: 8.5, sales: 140, badge: "TRADIZIONE", desc: "Farcita con salsiccia, erba cotta e pecorino.", recipe: {farina: 0.25, salsiccia: 0.15, pecorino: 0.05, verdure_grigliate: 0.1} },
-            { id: "pala_1", cat: "PALA", name: "PALA ESTIVA", price: 10.0, sales: 90, badge: "", desc: "Mozzarella fior di latte, Pomodoro pachino, Rucola, Mozzarella a crudo.", recipe: {farina: 0.35, mozzarella: 0.18, pomodoro: 0.1, rucola: 0.04} },
-            { id: "pala_2", cat: "PALA", name: "GENOVESE", price: 11.0, sales: 75, badge: "", desc: "Mozzarella fior di latte, Crema di zucca, Alici, Pomodori secchi, Stracciatella, Pesto.", recipe: {farina: 0.35, mozzarella: 0.12, zucca: 0.08, alici: 0.03, pomodori_secchi: 0.04, stracciatella: 0.08} },
-            { id: "pala_3", cat: "PALA", name: "MORTADELLA", price: 11.0, sales: 130, badge: "", desc: "Mozzarella fior di latte, Mortadella, Granelle di pistacchio, Stracciatella fresca.", recipe: {farina: 0.35, mozzarella: 0.12, mortadella: 0.12, frutta_secca: 0.03, stracciatella: 0.08} },
-            { id: "pala_4", cat: "PALA", name: "ALLE NOCI", price: 12.0, sales: 50, badge: "", desc: "Mozzarella fior di latte, Gorgonzola, Speck, Pere, Noci.", recipe: {farina: 0.35, mozzarella: 0.12, gorgonzola: 0.08, speck: 0.08, frutta_secca: 0.04} },
-            { id: "pala_5", cat: "PALA", name: "BROCCOLI", price: 11.0, sales: 40, badge: "", desc: "Mozzarella fior di latte, Provola affumicata, Broccoli saltati, Salsiccia, Patate.", recipe: {farina: 0.35, mozzarella: 0.1, provola: 0.06, broccoli: 0.08, salsiccia: 0.08, patate: 0.05} },
-            { id: "pala_6", cat: "PALA", name: "LA FONTINA", price: 11.0, sales: 60, badge: "", desc: "Mozzarella fior di latte, Crema di zucca gialla, Fontina valdostana, Sella di San Venanzo.", recipe: {farina: 0.35, mozzarella: 0.1, zucca: 0.08, fontina: 0.08, sella_san_venanzo: 0.08} },
-            { id: "pala_7", cat: "PALA", name: "LARDOSA", price: 12.0, sales: 85, badge: "", desc: "Mozzarella fior di latte, Lardo di Colonnata, Carciofi, Pomodori semi secchi, Bufala.", recipe: {farina: 0.35, mozzarella: 0.1, lardo: 0.06, pomodori_secchi: 0.05, mozzarella_bufala: 0.08} },
-            { id: "pala_8", cat: "PALA", name: "'NDUJA DI SPILINGA", price: 12.0, sales: 95, badge: "", desc: "Pomodoro, Mozzarella, 'Nduja, Cipolla rossa, Peperoni, Peperoncino.", recipe: {farina: 0.35, pomodoro: 0.12, mozzarella: 0.12, nduja: 0.06, cipolla: 0.04, verdure_grigliate: 0.05} },
-            { id: "ros_1", cat: "ROSSE", name: "CUBA", price: 10.0, sales: 70, badge: "NUOVO", desc: "Pomodoro, Mozzarella, Cipolla Rossa, Peperoni, Nduja, Peperoncino.", recipe: {farina: 0.25, farina_soia: 0.02, pomodoro: 0.12, mozzarella: 0.12, cipolla: 0.04, verdure_grigliate: 0.05, nduja: 0.05} },
-            { id: "ros_2", cat: "ROSSE", name: "GRENADA (PERUGINA)", price: 7.0, sales: 115, badge: "", desc: "Pomodoro, Mozzarella fior di latte, Salsiccia.", recipe: {farina: 0.25, farina_soia: 0.02, pomodoro: 0.12, mozzarella: 0.12, salsiccia: 0.08} },
-            { id: "ros_3", cat: "ROSSE", name: "LEVANTE (BISMARK)", price: 7.5, sales: 65, badge: "", desc: "Pomodoro, Mozzarella fior di latte, Uovo alla coque, Speck.", recipe: {farina: 0.25, farina_soia: 0.02, pomodoro: 0.12, mozzarella: 0.12, uova: 1.0, speck: 0.06} },
-            { id: "ros_4", cat: "ROSSE", name: "CALABRESE", price: 7.5, sales: 125, badge: "", desc: "Pomodoro, Mozzarella, Salame piccante, Pomodori semi secchi, Salsa piccante.", recipe: {farina: 0.25, farina_soia: 0.02, pomodoro: 0.12, mozzarella: 0.12, salame_piccante: 0.06, pomodori_secchi: 0.04} },
-            { id: "ros_5", cat: "ROSSE", name: "EL GUAPO", price: 8.5, sales: 90, badge: "", desc: "Pomodoro, Mozzarella, Salame piccante, Salsiccia, Harissa, Capperi.", recipe: {farina: 0.25, farina_soia: 0.02, pomodoro: 0.12, mozzarella: 0.12, salame_piccante: 0.05, salsiccia: 0.06} },
-            { id: "ros_6", cat: "ROSSE", name: "GEORGE TOWN (VEGETARIANA)", price: 7.5, sales: 40, badge: "VEGETARIANA", desc: "Solo pomodoro, Verdure miste grigliate, Origano.", recipe: {farina: 0.25, farina_soia: 0.02, pomodoro: 0.15, verdure_grigliate: 0.15} },
-            { id: "ros_7", cat: "ROSSE", name: "MANZANILLA (BOSCAIOLA)", price: 7.5, sales: 105, badge: "", desc: "Pomodoro, Mozzarella, Salsiccia, Funghi.", recipe: {farina: 0.25, farina_soia: 0.02, pomodoro: 0.12, mozzarella: 0.12, salsiccia: 0.06, funghi: 0.06} },
-            { id: "ros_8", cat: "ROSSE", name: "MARACAIBO (4 STAGIONI)", price: 8.0, sales: 85, badge: "", desc: "Pomodoro, Mozzarella, Funghi, Uovo, Carciofi, Crudo, Olive nere.", recipe: {farina: 0.25, farina_soia: 0.02, pomodoro: 0.12, mozzarella: 0.1, funghi: 0.04, uova: 1.0, prosciutto_crudo: 0.05} },
-            { id: "ros_9", cat: "ROSSE", name: "PANAMA", price: 7.5, sales: 75, badge: "", desc: "Pomodoro, Mozzarella, Salsa 4 formaggi, Prosciutto cotto, Gorgonzola.", recipe: {farina: 0.25, farina_soia: 0.02, pomodoro: 0.12, mozzarella: 0.1, quattro_formaggi: 0.05, prosciutto_cotto: 0.05, gorgonzola: 0.04} },
-            { id: "ros_10", cat: "ROSSE", name: "SAINT VINCENT", price: 7.5, sales: 55, badge: "", desc: "Pomodoro, Mozzarella fior di latte, Peperoni, Salsiccia.", recipe: {farina: 0.25, farina_soia: 0.02, pomodoro: 0.12, mozzarella: 0.12, verdure_grigliate: 0.06, salsiccia: 0.06} },
-            { id: "ros_11", cat: "ROSSE", name: "PORT AU PRINCE", price: 7.5, sales: 80, badge: "", desc: "Pomodoro, Mozzarella fior di latte, Funghi, Salame piccante.", recipe: {farina: 0.25, farina_soia: 0.02, pomodoro: 0.12, mozzarella: 0.12, funghi: 0.06, salame_piccante: 0.05} },
-            { id: "ros_12", cat: "ROSSE", name: "SANTO DOMINGO", price: 7.5, sales: 70, badge: "", desc: "Pomodoro, Mozzarella fior di latte, Salame piccante, 4 Formaggi.", recipe: {farina: 0.25, farina_soia: 0.02, pomodoro: 0.12, mozzarella: 0.1, salame_piccante: 0.05, quattro_formaggi: 0.06} },
-            { id: "ros_13", cat: "ROSSE", name: "TOBAGO (FRANCESCANA)", price: 7.5, sales: 95, badge: "", desc: "Pomodoro, Mozzarella fior di latte, Funghi, Crudo.", recipe: {farina: 0.25, farina_soia: 0.02, pomodoro: 0.12, mozzarella: 0.12, funghi: 0.06, prosciutto_crudo: 0.05} },
-            { id: "ros_14", cat: "ROSSE", name: "TORTOLA", price: 8.0, sales: 60, badge: "NUOVO", desc: "Pomodoro, Mozzarella, Crudo, Funghi, Salsiccia, Peperoncino, Rucola, Grana.", recipe: {farina: 0.25, farina_soia: 0.02, pomodoro: 0.12, mozzarella: 0.1, prosciutto_crudo: 0.05, funghi: 0.04, salsiccia: 0.05, rucola: 0.03, parmigiano: 0.02} },
-            { id: "ros_15", cat: "ROSSE", name: "MARGHERITA", price: 6.0, sales: 250, badge: "", desc: "Pomodoro, Mozzarella fior di latte.", recipe: {farina: 0.25, farina_soia: 0.02, pomodoro: 0.15, mozzarella: 0.15} },
-            { id: "bia_1", cat: "BIANCHE", name: "DOMINICA", price: 10.0, sales: 135, badge: "NUOVO", desc: "Mozzarella, Mortadella al pistacchio, Granelle di Pistacchio, Stracciatella.", recipe: {farina: 0.25, farina_soia: 0.02, mozzarella: 0.12, mortadella: 0.1, frutta_secca: 0.03, stracciatella: 0.08} },
-            { id: "bia_2", cat: "BIANCHE", name: "NASSAU", price: 7.0, sales: 50, badge: "", desc: "Mozzarella fior di latte, Pachino, Rucola, Mozzarella fresca.", recipe: {farina: 0.25, farina_soia: 0.02, mozzarella: 0.15, pomodoro: 0.06, rucola: 0.04} },
-            { id: "bia_3", cat: "BIANCHE", name: "ANTIGUA", price: 7.5, sales: 90, badge: "", desc: "Mozzarella fior di latte, 4 Formaggi, Salsa tartufata.", recipe: {farina: 0.25, farina_soia: 0.02, mozzarella: 0.12, quattro_formaggi: 0.08, tartufo: 0.03} },
-            { id: "bia_4", cat: "BIANCHE", name: "BARRANQUILLA", price: 8.0, sales: 85, badge: "", desc: "Mozzarella fior di latte, Salsa tartufata, Funghi, Salsiccia.", recipe: {farina: 0.25, farina_soia: 0.02, mozzarella: 0.12, tartufo: 0.03, funghi: 0.05, salsiccia: 0.06} },
-            { id: "bia_5", cat: "BIANCHE", name: "BELIZE", price: 7.5, sales: 65, badge: "", desc: "Mozzarella fior di latte, Zucchine, Pancetta, Provola.", recipe: {farina: 0.25, farina_soia: 0.02, mozzarella: 0.1, verdure_grigliate: 0.06, pancetta: 0.06, provola: 0.06} },
-            { id: "bia_6", cat: "BIANCHE", name: "BERMUDA", price: 8.5, sales: 70, badge: "", desc: "Mozzarella fior di latte, Gorgonzola, Speck, Pere, Noci.", recipe: {farina: 0.25, farina_soia: 0.02, mozzarella: 0.12, gorgonzola: 0.06, speck: 0.06, frutta_secca: 0.03} },
-            { id: "bia_7", cat: "BIANCHE", name: "BUFALINA", price: 8.5, sales: 110, badge: "", desc: "Mozzarella di bufala, Pachino, Basilico, Origano.", recipe: {farina: 0.25, farina_soia: 0.02, mozzarella_bufala: 0.2, pomodoro: 0.08} },
-            { id: "bia_8", cat: "BIANCHE", name: "CANCUN", price: 8.0, sales: 60, badge: "", desc: "Mozzarella fior di latte, Bresaola, Rucola, Grana.", recipe: {farina: 0.25, farina_soia: 0.02, mozzarella: 0.12, bresaola: 0.08, rucola: 0.04, parmigiano: 0.03} },
-            { id: "bia_9", cat: "BIANCHE", name: "CARACAS", price: 8.5, sales: 45, badge: "", desc: "Mozzarella fior di latte, Salmone, Rucola, Grana.", recipe: {farina: 0.25, farina_soia: 0.02, mozzarella: 0.12, salmone: 0.08, rucola: 0.04, parmigiano: 0.03} },
-            { id: "bia_10", cat: "BIANCHE", name: "CARTAGENA (VEGETARIANA)", price: 7.5, sales: 40, badge: "VEGETARIANA", desc: "Mozzarella fior di latte, Melanzane, Zucchine, Radicchio, Mais, Pachino.", recipe: {farina: 0.25, farina_soia: 0.02, mozzarella: 0.12, verdure_grigliate: 0.15, pomodoro: 0.05} },
-            { id: "bia_11", cat: "BIANCHE", name: "ELEUTHERA", price: 7.5, sales: 75, badge: "", desc: "Mozzarella fior di latte, Stracchino, Rucola, Crudo.", recipe: {farina: 0.25, farina_soia: 0.02, mozzarella: 0.1, stracchino: 0.06, rucola: 0.04, prosciutto_crudo: 0.05} },
-            { id: "bia_12", cat: "BIANCHE", name: "EMILIANA", price: 7.5, sales: 80, badge: "", desc: "Mozzarella fior di latte, Capriccio di tartufo, Mortadella a julienne, Rosmarino.", recipe: {farina: 0.25, farina_soia: 0.02, mozzarella: 0.12, tartufo: 0.03, mortadella: 0.08} },
-            { id: "bia_13", cat: "BIANCHE", name: "GUADALUPA", price: 8.5, sales: 60, badge: "", desc: "Mozzarella fior di latte, 4 Formaggi, Porcini, Salsa di porcini.", recipe: {farina: 0.25, farina_soia: 0.02, mozzarella: 0.1, quattro_formaggi: 0.08, funghi: 0.08} },
-            { id: "bia_14", cat: "BIANCHE", name: "JAMAICA", price: 8.0, sales: 95, badge: "", desc: "Mozzarella fior di latte, Patate lesse, Salsiccia, Rosmarino.", recipe: {farina: 0.25, farina_soia: 0.02, mozzarella: 0.12, patate: 0.1, salsiccia: 0.06} },
-            { id: "bia_15", cat: "BIANCHE", name: "KINGSTON (FOCACCIA)", price: 4.5, sales: 80, badge: "", desc: "Focaccia classica con olio e rosmarino.", recipe: {farina: 0.25, farina_soia: 0.02} },
-            { id: "bia_16", cat: "BIANCHE", name: "MAREMMANA", price: 8.0, sales: 65, badge: "", desc: "Mozzarella fior di latte, Crema di zucca, Lardo di Colonnata.", recipe: {farina: 0.25, farina_soia: 0.02, mozzarella: 0.12, zucca: 0.08, lardo: 0.06} },
-            { id: "bia_17", cat: "BIANCHE", name: "PUERTO RICO", price: 9.0, sales: 35, badge: "", desc: "Mozzarella fior di latte, 4 Formaggi, Gamberetti in salsa rosa, Mais, Rucola.", recipe: {farina: 0.25, farina_soia: 0.02, mozzarella: 0.1, quattro_formaggi: 0.06, gamberetti: 0.08, rucola: 0.03} },
-            { id: "bia_18", cat: "BIANCHE", name: "TORTUGA (4 FORMAGGI)", price: 8.0, sales: 100, badge: "", desc: "Mozzarella fior di latte, 4 Formaggi, Gorgonzola.", recipe: {farina: 0.25, farina_soia: 0.02, mozzarella: 0.12, quattro_formaggi: 0.1, gorgonzola: 0.05} },
-            { id: "ham_1", cat: "HAMBURGER", name: "BOMBARDINO", price: 14.0, sales: 160, badge: "NUOVO", desc: "220Gr Chianina, Cheddar, Bacon, Cipolla caramellata, Jalapeno, Pomodoro, Lattuga, Salsa Galleon.", recipe: {manzo_chianina: 0.22, quattro_formaggi: 0.04, pancetta: 0.04, cipolla: 0.04, verdure_grigliate: 0.04, pane_panino: 1.0, salse_varie: 0.03} },
-            { id: "ham_2", cat: "HAMBURGER", name: "ARUBA (Cotoletta Milanese)", price: 12.0, sales: 105, badge: "NUOVO", desc: "Cotoletta di pollo alla milanese con patate fritte.", recipe: {pollo: 0.2, patate: 0.2, pane_panino: 1.0} },
-            { id: "ham_3", cat: "HAMBURGER", name: "BAHAMAS", price: 15.0, sales: 140, badge: "NUOVO", desc: "Scottona 220 gr, Melanzane, Pom Semi Secchi, Provola, Maionese, Patate Arrosto.", recipe: {manzo_chianina: 0.22, verdure_grigliate: 0.06, pomodori_secchi: 0.04, provola: 0.06, patate: 0.2, pane_panino: 1.0} },
-            { id: "ham_4", cat: "HAMBURGER", name: "CURACAO", price: 14.0, sales: 90, badge: "NUOVO", desc: "Pollo 150 gr, Maionese, Lattuga, Pomodoro, Verdure pastellate.", recipe: {pollo: 0.15, verdure_fritte: 0.2, rucola: 0.04, pomodoro: 0.04, pane_panino: 1.0} },
-            { id: "ham_5", cat: "HAMBURGER", name: "PETTO DI POLLO GRIGLIA", price: 12.0, sales: 70, badge: "NUOVO", desc: "Petto di pollo al piatto con contorno e Torta al Testo.", recipe: {pollo: 0.25, verdure_grigliate: 0.15, pane_panino: 1.0} },
-            { id: "ham_6", cat: "HAMBURGER", name: "HAMBURGER AL PIATTO", price: 14.0, sales: 110, badge: "", desc: "Chianina 220 gr con contorno e torta al testo.", recipe: {manzo_chianina: 0.22, patate: 0.2, pane_panino: 1.0} },
-            { id: "ham_7", cat: "HAMBURGER", name: "ANNIVERSARY BURGER", price: 15.0, sales: 150, badge: "", desc: "220 gr Angus, Cheddar, Bacon, Pomodoro, Cipolla, Lattuga, Salsa B&B.", recipe: {manzo_chianina: 0.22, quattro_formaggi: 0.05, pancetta: 0.05, pomodoro: 0.05, cipolla: 0.04, pane_panino: 1.0, patate: 0.2} },
-            { id: "ham_8", cat: "HAMBURGER", name: "ALESSIA'S BURGER", price: 15.0, sales: 125, badge: "", desc: "Manzo 150 gr, Burrata, Pomodori semi secchi, Mortadella, Rucola.", recipe: {manzo_chianina: 0.15, burrata: 0.08, pomodori_secchi: 0.04, mortadella: 0.06, rucola: 0.04, pane_panino: 1.0} },
-            { id: "ham_9", cat: "HAMBURGER", name: "BEEF BURGER", price: 13.0, sales: 80, badge: "", desc: "150 gr Manzo, Ragù, Melanzane, Zucchine, Mozzarella alla piastra.", recipe: {manzo_chianina: 0.15, verdure_grigliate: 0.08, mozzarella: 0.08, pane_panino: 1.0} },
-            { id: "ham_10", cat: "HAMBURGER", name: "ANTONIO'S", price: 15.0, sales: 130, badge: "", desc: "Chianina 220 gr, Mozzarella, 4 Formaggi, Salsa rosa, Bacon, Rucola.", recipe: {manzo_chianina: 0.22, mozzarella: 0.06, quattro_formaggi: 0.05, pancetta: 0.04, rucola: 0.03, pane_panino: 1.0} },
-            { id: "ham_11", cat: "HAMBURGER", name: "PETER'S", price: 15.0, sales: 95, badge: "", desc: "Chianina 220 gr, Salsa piccante, Sottiletta, Cipolla fritta, Cetrioli, Pomodoro.", recipe: {manzo_chianina: 0.22, quattro_formaggi: 0.04, cipolla: 0.05, pomodoro: 0.04, pane_panino: 1.0} },
-            { id: "ham_12", cat: "HAMBURGER", name: "DOUBLE BACON BURGER", price: 15.0, sales: 145, badge: "", desc: "200 gr Fassona, Doppio bacon, Cheddar, Cipolla, Insalata, Pomodoro.", recipe: {fassona: 0.2, pancetta: 0.08, quattro_formaggi: 0.05, cipolla: 0.04, pomodoro: 0.04, pane_panino: 1.0} },
-            { id: "ham_13", cat: "HAMBURGER", name: "CABOTO", price: 9.0, sales: 75, badge: "", desc: "Manzo 150 gr, 4 formaggi, Harissa, Sottiletta, Crauti.", recipe: {manzo_chianina: 0.15, quattro_formaggi: 0.06, pancetta: 0.03, pane_panino: 1.0, patate: 0.15} },
-            { id: "ham_14", cat: "HAMBURGER", name: "CABRAL", price: 9.0, sales: 80, badge: "", desc: "Manzo 150 gr, Bacon, Salsa Harissa, Maionese.", recipe: {manzo_chianina: 0.15, pancetta: 0.05, salse_varie: 0.04, pane_panino: 1.0, patate: 0.15} },
-            { id: "ham_15", cat: "HAMBURGER", name: "CHEESEBURGER", price: 10.0, sales: 110, badge: "", desc: "Manzo 150 gr, Pomodoro, Lattuga, Cipolla, Maionese, 4 formaggi, Cheddar, Gorgonzola.", recipe: {manzo_chianina: 0.15, pomodoro: 0.04, rucola: 0.03, cipolla: 0.03, quattro_formaggi: 0.08, gorgonzola: 0.04, pane_panino: 1.0, patate: 0.15} },
-            { id: "ham_16", cat: "HAMBURGER", name: "HAMBURGER GALLEON", price: 9.5, sales: 90, badge: "", desc: "Manzo 150 gr, Salsa amatriciana, Pecorino, Uovo, Pomodoro, Lattuga.", recipe: {manzo_chianina: 0.15, pancetta: 0.04, pecorino: 0.03, uova: 1.0, pomodoro: 0.04, pane_panino: 1.0} },
-            { id: "ham_17", cat: "HAMBURGER", name: "NUNEZ", price: 9.0, sales: 85, badge: "", desc: "Manzo 150 gr, Pomodoro, Lattuga, Ketchup, Maionese.", recipe: {manzo_chianina: 0.15, pomodoro: 0.04, rucola: 0.03, salse_varie: 0.05, pane_panino: 1.0, patate: 0.15} },
-            { id: "tag_1", cat: "TAGLIERI", name: "TAGLIERE NOSTRANO", price: 10.0, sales: 130, badge: "", desc: "Affettati e formaggi nostrani con Torta al Testo.", recipe: {prosciutto_crudo: 0.06, sella_san_venanzo: 0.05, salame: 0.05, pecorino: 0.05, gorgonzola: 0.05, pane_panino: 1.0} },
-            { id: "pan_1", cat: "PANINI", name: "EL PERUGINO", price: 9.0, sales: 100, badge: "", desc: "Doppia salsiccia, Cipolla caramellata, Peperoni, Salsa piccante, Emmental.", recipe: {salsiccia: 0.2, cipolla: 0.06, verdure_grigliate: 0.08, quattro_formaggi: 0.04, pane_panino: 1.0, patate: 0.15} },
-            { id: "pan_2", cat: "PANINI", name: "BRIGANTINO", price: 7.0, sales: 85, badge: "", desc: "Cotoletta di pollo, Lattuga, Pomodoro, Maionese.", recipe: {pollo: 0.15, rucola: 0.04, pomodoro: 0.04, salse_varie: 0.04, pane_panino: 1.0, patate: 0.15} },
-            { id: "piad_1", cat: "PIADINE", name: "PIADINA MORTADELLA", price: 12.0, sales: 120, badge: "NUOVO", desc: "Manzo 150 gr, Burrata, Pomodori semi secchi, Rucola, Mortadella, Maionese.", recipe: {farina: 0.2, manzo_chianina: 0.15, burrata: 0.08, pomodori_secchi: 0.04, rucola: 0.04, mortadella: 0.08} },
-            { id: "piad_2", cat: "PIADINE", name: "CAPITANO", price: 6.5, sales: 90, badge: "", desc: "Mozzarella fior di latte, Prosciutto crudo.", recipe: {farina: 0.2, mozzarella: 0.1, prosciutto_crudo: 0.08} },
-            { id: "piad_3", cat: "PIADINE", name: "CHIANINA", price: 10.0, sales: 110, badge: "", desc: "Chianina 100 gr, Bacon, Cheddar, Insalata, Pomodoro, Cipolla, Mozzarella.", recipe: {farina: 0.2, manzo_chianina: 0.1, pancetta: 0.04, quattro_formaggi: 0.04, pomodoro: 0.04, mozzarella: 0.06} },
-            { id: "piad_4", cat: "PIADINE", name: "MOZZO", price: 7.5, sales: 60, badge: "", desc: "Bresaola, Rucola, Stracchino, Champignon.", recipe: {farina: 0.2, bresaola: 0.06, rucola: 0.04, stracchino: 0.06, funghi: 0.04} },
-            { id: "piad_5", cat: "PIADINE", name: "NOCCHIERO", price: 7.0, sales: 75, badge: "", desc: "Mozzarella fior di latte, Champignon, Crudo, Rucola, Pachino.", recipe: {farina: 0.2, mozzarella: 0.08, funghi: 0.04, prosciutto_crudo: 0.06, rucola: 0.03} },
-            { id: "piad_6", cat: "PIADINE", name: "NOSTROMO", price: 7.0, sales: 80, badge: "", desc: "Mozzarella, Scamorza affumicata, Speck, Mais, Pachino.", recipe: {farina: 0.2, mozzarella: 0.08, provola: 0.06, speck: 0.06, pomodoro: 0.04} },
-            { id: "piad_7", cat: "PIADINE", name: "ORTOLANA", price: 9.0, sales: 65, badge: "", desc: "Chianina 100 gr, Melanzane, Pomodoro, Insalata, Mozzarella.", recipe: {farina: 0.2, manzo_chianina: 0.1, verdure_grigliate: 0.1, pomodoro: 0.04, mozzarella: 0.06} },
-            { id: "piad_8", cat: "PIADINE", name: "PARMIGIANA", price: 7.5, sales: 70, badge: "", desc: "Parmigiano, Champignon, Rucola, Pachino, Salsiccia.", recipe: {farina: 0.2, parmigiano: 0.04, funghi: 0.04, rucola: 0.03, salsiccia: 0.06} },
-            { id: "piad_9", cat: "PIADINE", name: "PIADINA CON SELLA", price: 9.0, sales: 85, badge: "", desc: "Sella di San Venanzo e Pecorino.", recipe: {farina: 0.2, sella_san_venanzo: 0.1, pecorino: 0.05} },
-            { id: "piad_10", cat: "PIADINE", name: "SPUGNA", price: 8.5, sales: 90, badge: "", desc: "Mozzarella, Salsiccia, Funghi, Tartufo.", recipe: {farina: 0.2, mozzarella: 0.08, salsiccia: 0.06, funghi: 0.04, tartufo: 0.03} },
-            { id: "piad_11", cat: "PIADINE", name: "TACCHINO", price: 8.0, sales: 50, badge: "", desc: "Tacchino, Rucola, Pachino, Mozzarella, Salsa tonnata.", recipe: {farina: 0.2, pollo: 0.1, rucola: 0.03, mozzarella: 0.06, salse_varie: 0.04} },
-            { id: "piad_12", cat: "PIADINE", name: "VEGETARIANA", price: 7.0, sales: 45, badge: "VEGETARIANA", desc: "Mozzarella fior di latte, Verdure grigliate.", recipe: {farina: 0.2, mozzarella: 0.1, verdure_grigliate: 0.15} },
-            { id: "hot_1", cat: "HOTDOG", name: "TEDESCO", price: 8.0, sales: 95, badge: "", desc: "Wurstel 90 gr, Cipolla caramellata, Crauti, Ketchup, Maionese, Emmental.", recipe: {wurstel: 0.09, cipolla: 0.04, quattro_formaggi: 0.04, salse_varie: 0.04, pane_panino: 1.0} },
-            { id: "hot_2", cat: "HOTDOG", name: "A GONFIE VELE", price: 7.0, sales: 110, badge: "", desc: "Wurstel 90 gr, Ketchup, Maionese, Patate fritte.", recipe: {wurstel: 0.09, salse_varie: 0.05, pane_panino: 1.0, patate: 0.15} },
-            { id: "hot_3", cat: "HOTDOG", name: "IN SECCA", price: 7.0, sales: 85, badge: "", desc: "Wurstel 90 gr, Salame piccante, Ketchup, Mozzarella, Patate fritte.", recipe: {wurstel: 0.09, salame_piccante: 0.04, mozzarella: 0.06, pane_panino: 1.0, patate: 0.15} },
-            { id: "frig_1", cat: "FRIGGITORIA", name: "JALAPENO VERDI (5 pz)", price: 6.0, sales: 130, badge: "NUOVO", desc: "Con cheddar.", recipe: {verdure_fritte: 0.15, quattro_formaggi: 0.05} },
-            { id: "frig_2", cat: "FRIGGITORIA", name: "FIORI DI ZUCCA (4 pz)", price: 6.0, sales: 100, badge: "NUOVO", desc: "Con alici.", recipe: {verdure_fritte: 0.15, alici: 0.03} },
-            { id: "frig_3", cat: "FRIGGITORIA", name: "PATATE ARROSTO CON BACON", price: 4.0, sales: 160, badge: "NUOVO / GF", desc: "Patate arrosto con bacon.", recipe: {patate: 0.2, pancetta: 0.05} },
-            { id: "frig_4", cat: "FRIGGITORIA", name: "JALAPENOS ROSSI (5 pz)", price: 6.0, sales: 90, badge: "", desc: "Piccanti.", recipe: {verdure_fritte: 0.15} },
-            { id: "frig_5", cat: "FRIGGITORIA", name: "ALETTE DI POLLO (6 pz)", price: 6.0, sales: 140, badge: "", desc: "6 Pezzi.", recipe: {pollo: 0.2} },
-            { id: "frig_6", cat: "FRIGGITORIA", name: "ANELLI DI CIPOLLA", price: 5.0, sales: 120, badge: "", desc: "Porzione anelli di cipolla.", recipe: {verdure_fritte: 0.18} },
-            { id: "frig_7", cat: "FRIGGITORIA", name: "CHELE DI GRANCHIO (4 pz)", price: 5.0, sales: 70, badge: "", desc: "4 Pezzi.", recipe: {verdure_fritte: 0.18} },
-            { id: "frig_8", cat: "FRIGGITORIA", name: "CROCCHETTE POLLO/PATATE", price: 5.0, sales: 110, badge: "", desc: "7 Pezzi.", recipe: {patate: 0.2} },
-            { id: "frig_9", cat: "FRIGGITORIA", name: "FATTO DA NOI (Mix)", price: 10.0, sales: 150, badge: "", desc: "Roll, crocchette, polpette manzo cheddar, corn dog, patate scavate.", recipe: {patate: 0.3, manzo_chianina: 0.1, pancetta: 0.05} },
-            { id: "frig_10", cat: "FRIGGITORIA", name: "GRAN MIX", price: 10.0, sales: 145, badge: "", desc: "Olive ascolane, mozzarelline, crocchette, chele, patatine.", recipe: {patate: 0.25, mozzarella: 0.06} },
-            { id: "frig_11", cat: "FRIGGITORIA", name: "MIX PICCANTE", price: 10.0, sales: 135, badge: "", desc: "Jalapenos, alette pollo, anelli cipolla, patate chips.", recipe: {patate: 0.25, pollo: 0.1} },
-            { id: "frig_12", cat: "FRIGGITORIA", name: "MOZZARELLINE (7 pz)", price: 5.0, sales: 160, badge: "", desc: "7 Pezzi.", recipe: {mozzarella: 0.15} },
-            { id: "frig_13", cat: "FRIGGITORIA", name: "OLIVE ASCOLANE (7 pz)", price: 5.0, sales: 155, badge: "", desc: "7 Pezzi.", recipe: {manzo_chianina: 0.12} },
-            { id: "frig_14", cat: "FRIGGITORIA", name: "PATATE SCAVATE (DIPPERS)", price: 5.0, sales: 170, badge: "", desc: "Dippers.", recipe: {patate: 0.25} },
-            { id: "frig_15", cat: "FRIGGITORIA", name: "PATATE & WURSTEL", price: 6.0, sales: 125, badge: "", desc: "Porzione mista.", recipe: {patate: 0.2, wurstel: 0.08} },
-            { id: "frig_16", cat: "FRIGGITORIA", name: "PATATINE / CHIPS", price: 5.0, sales: 220, badge: "", desc: "Porzione standard.", recipe: {patate: 0.25} },
-            { id: "frig_17", cat: "FRIGGITORIA", name: "SUPPLI", price: 2.0, sales: 190, badge: "", desc: "Pezzo singolo.", recipe: {patate: 0.1, mozzarella: 0.03} },
-            { id: "frig_18", cat: "FRIGGITORIA", name: "VERDURE FRITTE", price: 6.0, sales: 95, badge: "", desc: "Pastellate.", recipe: {verdure_fritte: 0.25} },
-            { id: "dolc_1", cat: "DOLCI", name: "TORTA CHEESECAKE", price: 5.5, sales: 140, badge: "", desc: "Vari gusti.", recipe: {frutta_secca: 0.1} },
-            { id: "dolc_2", cat: "DOLCI", name: "SEMIFREDDO PISTACCHIO", price: 6.0, sales: 115, badge: "NUOVO", desc: "Artigianale.", recipe: {frutta_secca: 0.12} },
-            { id: "dolc_3", cat: "DOLCI", name: "SEMIFREDDO CROCCANTE", price: 5.5, sales: 90, badge: "", desc: "Cioccolato fondente.", recipe: {frutta_secca: 0.1} },
-            { id: "dolc_4", cat: "DOLCI", name: "FRUTTA FRESCA / MACEDONIA", price: 6.0, sales: 50, badge: "", desc: "Stagionale.", recipe: {frutta_secca: 0.1} },
-            { id: "dolc_5", cat: "DOLCI", name: "CREMA CATALANA / PANNA COTTA", price: 5.5, sales: 105, badge: "", desc: "Artigianale.", recipe: {frutta_secca: 0.08} },
-            { id: "dolc_6", cat: "DOLCI", name: "COPPA GELATO / CREPES / TIRAMISU", price: 5.5, sales: 130, badge: "", desc: "Dolci vari.", recipe: {frutta_secca: 0.1} },
-            { id: "dolc_7", cat: "DOLCI", name: "PIZZA DOLCE", price: 7.0, sales: 120, badge: "", desc: "Nutella o panna.", recipe: {farina: 0.2, frutta_secca: 0.08} },
-            { id: "dolc_8", cat: "DOLCI", name: "TORTINO CIOCCOLATO", price: 5.5, sales: 160, badge: "", desc: "Cuore caldo.", recipe: {frutta_secca: 0.12} },
-            { id: "bib_1", cat: "BIBITE", name: "ACQUA 1.5L / 1L", price: 2.0, sales: 300, badge: "", desc: "N/F.", recipe: {formato_bibita: 1.0} },
-            { id: "bib_2", cat: "BIBITE", name: "COCA / FANTA / SPRITE / THE", price: 3.0, sales: 280, badge: "", desc: "0.33 L.", recipe: {formato_bibita: 1.0} },
-            { id: "bib_3", cat: "BIBITE", name: "BIRRA CARLSBERG (Spina)", price: 4.0, sales: 240, badge: "SPINA", desc: "Lager.", recipe: {formato_bibita: 1.0} },
-            { id: "bib_4", cat: "BIBITE", name: "BIRRA GRIMBERGEN DOUBLE", price: 5.0, sales: 180, badge: "SPINA", desc: "Rossa.", recipe: {formato_bibita: 1.0} },
-            { id: "bib_5", cat: "BIBITE", name: "SPECIAL BREW / TUCHER WEIZEN", price: 5.0, sales: 150, badge: "SPINA", desc: "Doppio malto / Weizen.", recipe: {formato_bibita: 1.0} },
-            { id: "bib_6", cat: "BIBITE", name: "BIRRE IN BOTTIGLIA", price: 4.5, sales: 130, badge: "BOTTIGLIA", desc: "Selezione.", recipe: {formato_bibita: 1.0} },
-            { id: "vin_1", cat: "VINI", name: "VINI ANTONUTTI 0.375 / 0.75", price: 11.0, sales: 85, badge: "DOC", desc: "Refosco, Ribolla, Sauvignon, Traminer.", recipe: {formato_bibita: 1.0} },
-            { id: "vin_2", cat: "VINI", name: "AMARI E GRAPPA", price: 3.8, sales: 210, badge: "", desc: "Selezione.", recipe: {formato_bibita: 1.0} },
-            { id: "vin_3", cat: "VINI", name: "CAFFE ESPRESSO", price: 1.5, sales: 350, badge: "", desc: "Espresso.", recipe: {formato_bibita: 1.0} }
+        // --- DATI REALI SINCRO DA EXCEL ---
+        let ingredientsData = [
+            { id: "mozzarella", name: "Mozzarella", unit: "kg/gr", cost: 8.87, marketPrice: 10.20, supplier: "Latteria Umbra" },
+            { id: "impasto", name: "Impasto Base", unit: "pezzi", cost: 0.18, marketPrice: 0.25, supplier: "Produzione Interna" },
+            { id: "zucchine", name: "Zucchine", unit: "kg/gr", cost: 2.30, marketPrice: 2.80, supplier: "Ortofrutta Local" },
+            { id: "pancetta", name: "Pancetta", unit: "kg/gr", cost: 11.83, marketPrice: 13.50, supplier: "Salumificio" },
+            { id: "provola", name: "Provola Afumicata", unit: "kg/gr", cost: 12.24, marketPrice: 14.10, supplier: "Latteria Umbra" },
+            { id: "pomodoro", name: "Salsa Pomodoro", unit: "kg/gr", cost: 1.20, marketPrice: 1.50, supplier: "Distribuzione" },
+            { id: "prosciutto_cotto", name: "Prosciutto Cotto", unit: "kg/gr", cost: 9.50, marketPrice: 11.00, supplier: "Salumificio" },
+            { id: "funghi", name: "Funghi Champignon", unit: "kg/gr", cost: 3.50, marketPrice: 4.20, supplier: "Ortofrutta" }
         ];
 
-        // --- STATO APPLICAZIONE ---
-        let ingredients = JSON.parse(localStorage.getItem('galleon_ingredients')) || defaultIngredients;
-        let products = JSON.parse(localStorage.getItem('galleon_products')) || defaultProducts;
-        let currentFilter = 'ALL';
-        let currentEditingProductId = null;
-        let kasavanaChartInstance = null;
-
-        function saveData() {
-            localStorage.setItem('galleon_ingredients', JSON.stringify(ingredients));
-            localStorage.setItem('galleon_products', JSON.stringify(products));
-        }
-
-        function resetData() {
-            if(confirm("Ripristinare i dati originali di fabbrica?")) {
-                localStorage.removeItem('galleon_ingredients');
-                localStorage.removeItem('galleon_products');
-                ingredients = JSON.parse(JSON.stringify(defaultIngredients));
-                products = JSON.parse(JSON.stringify(defaultProducts));
-                initApp();
+        let productsData = [
+            {
+                id: "belize",
+                name: "BELIZE",
+                category: "PIZZE BIANCHE",
+                price: 9.50,
+                recipe: [
+                    { ingrId: "impasto", qty: 1 },
+                    { ingrId: "mozzarella", qty: 0.14 },
+                    { ingrId: "zucchine", qty: 0.10 },
+                    { ingrId: "pancetta", qty: 0.05 },
+                    { ingrId: "provola", qty: 0.04 }
+                ]
+            },
+            {
+                id: "marinara",
+                name: "MARINARA",
+                category: "PIZZE ROSSE",
+                price: 6.00,
+                recipe: [
+                    { ingrId: "impasto", qty: 1 },
+                    { ingrId: "pomodoro", qty: 0.15 }
+                ]
+            },
+            {
+                id: "haity_cotto",
+                name: "HAITY COTTO",
+                category: "PIZZE ROSSE",
+                price: 7.00,
+                recipe: [
+                    { ingrId: "impasto", qty: 1 },
+                    { ingrId: "pomodoro", qty: 0.10 },
+                    { ingrId: "mozzarella", qty: 0.10 },
+                    { ingrId: "prosciutto_cotto", qty: 0.08 }
+                ]
             }
+        ];
+
+        // --- INIZIALIZZAZIONE ---
+        document.addEventListener("DOMContentLoaded", () => {
+            renderProducts();
+            renderIngredients();
+            initCharts();
+        });
+
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('collapsed');
+            document.getElementById('mainWrapper').classList.toggle('expanded');
         }
 
-        function exportData() {
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({ingredients, products}, null, 2));
-            const dlAnchorElem = document.createElement('a');
-            dlAnchorElem.setAttribute("href", dataStr);
-            dlAnchorElem.setAttribute("download", "galleon_kasavana_data.json");
-            dlAnchorElem.click();
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('active'));
+            
+            document.getElementById(tabId).classList.add('active');
+            event.currentTarget.classList.add('active');
+
+            const titleMap = {
+                'products': 'Gestione Prodotti e Food Cost',
+                'ingredients': 'Anagrafica Materie Prime & Prezzi Market',
+                'analytics': 'Dashboard Analitica e Margini',
+                'ai-assistant': 'Assistente Tecnico AI Food Cost'
+            };
+            document.getElementById('pageTitle').innerText = titleMap[tabId];
         }
 
-        function calculateProductFoodCost(product) {
+        // --- CALCOLO FOOD COST ---
+        function calculateProductFC(product) {
             let totalCost = 0;
-            if (!product.recipe) return 0;
-            for (let [ingKey, qty] of Object.entries(product.recipe)) {
-                if (ingredients[ingKey]) {
-                    totalCost += ingredients[ingKey].price * qty;
+            product.recipe.forEach(item => {
+                let ingr = ingredientsData.find(i => i.id === item.ingrId);
+                if (ingr) {
+                    totalCost += ingr.cost * item.qty;
                 }
-            }
+            });
             return totalCost;
         }
 
-        // --- RENDER COMPONENTI ---
-        function initApp() {
-            renderIngredientsSidebar();
-            renderMenu();
-            renderMatrixTable();
-            renderKasavanaChart();
-            setupEventListeners();
-        }
+        // --- RENDER TABELLA PRODOTTI ---
+        function renderProducts() {
+            const tbody = document.getElementById('productsTableBody');
+            tbody.innerHTML = '';
 
-        function renderIngredientsSidebar() {
-            const container = document.getElementById('ingredientsListContainer');
-            const search = document.getElementById('searchIngredient').value.toLowerCase();
-            container.innerHTML = '';
+            productsData.forEach(p => {
+                let fc = calculateProductFC(p);
+                let incidenza = p.price > 0 ? ((fc / p.price) * 100).toFixed(1) : 0;
+                let margine = (p.price - fc).toFixed(2);
+                
+                let badgeClass = incidenza <= 25 ? 'badge-success' : (incidenza <= 32 ? 'badge-warning' : 'badge-danger');
 
-            for (let [key, ing] of Object.entries(ingredients)) {
-                if (ing.name.toLowerCase().includes(search)) {
-                    const div = document.createElement('div');
-                    div.className = "bg-indigo-950 p-3 rounded-2xl border-2 border-indigo-800 flex items-center justify-between gap-3 shadow";
-                    div.innerHTML = `
-                        <div class="flex-1 min-w-0">
-                            <p class="text-xs font-black text-indigo-100 truncate" title="${ing.name}">${ing.name}</p>
-                            <span class="text-[10px] bg-indigo-900 text-indigo-300 px-2 py-0.5 rounded font-bold">Unità: ${ing.unit}</span>
-                        </div>
-                        <div class="flex items-center gap-1">
-                            <span class="text-xs text-amber-400 font-black">€</span>
-                            <input type="number" step="0.1" value="${ing.price}" onchange="updateIngredientPrice('${key}', this.value)" class="w-16 bg-indigo-900 border-2 border-indigo-700 rounded-xl px-2 py-1 text-xs text-right text-white font-black focus:outline-none focus:border-amber-400">
-                        </div>
-                    `;
-                    container.appendChild(div);
-                }
-            }
-        }
-
-        function updateIngredientPrice(key, val) {
-            const num = parseFloat(val);
-            if (!isNaN(num) && num >= 0) {
-                ingredients[key].price = num;
-                saveData();
-                renderMenu();
-                renderMatrixTable();
-                renderKasavanaChart();
-            }
-        }
-
-        function filterCategory(cat) {
-            currentFilter = cat;
-            document.querySelectorAll('.cat-btn').forEach(btn => {
-                btn.classList.remove('bg-amber-400', 'text-indigo-950', 'font-black');
-                btn.classList.add('bg-indigo-800', 'text-indigo-200', 'font-bold');
-            });
-            event.target.classList.remove('bg-indigo-800', 'text-indigo-200', 'font-bold');
-            event.target.classList.add('bg-amber-400', 'text-indigo-950', 'font-black');
-            renderMenu();
-        }
-
-        function renderMenu() {
-            const container = document.getElementById('menuContainer');
-            const searchProd = document.getElementById('searchProduct').value.toLowerCase();
-            container.innerHTML = '';
-
-            const categories = {};
-            products.forEach(p => {
-                if (currentFilter === 'ALL' || p.cat === currentFilter) {
-                    if (p.name.toLowerCase().includes(searchProd) || p.desc.toLowerCase().includes(searchProd)) {
-                        if (!categories[p.cat]) categories[p.cat] = [];
-                        categories[p.cat].push(p);
-                    }
-                }
-            });
-
-            if (Object.keys(categories).length === 0) {
-                container.innerHTML = `<div class="text-center py-12 text-indigo-300 font-bold text-sm">Nessun prodotto trovato! 🐾</div>`;
-                return;
-            }
-
-            for (let [catName, prods] of Object.entries(categories)) {
-                const section = document.createElement('div');
-                section.className = "space-y-4";
-
-                section.innerHTML = `
-                    <div class="border-b-4 border-indigo-800 pb-2 flex items-center justify-between">
-                        <h2 class="text-base sm:text-lg font-black tracking-wide text-amber-300 flex items-center gap-2">
-                            <i class="fa-solid fa-utensils text-pink-400"></i> ${catName}
-                        </h2>
-                        <span class="text-xs bg-indigo-900 text-indigo-300 font-bold px-3 py-1 rounded-xl border border-indigo-700">${prods.length} prodotti</span>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                        ${prods.map(p => {
-                            const foodCost = calculateProductFoodCost(p);
-                            const margin = p.price - foodCost;
-                            const marginPct = p.price > 0 ? (margin / p.price) * 100 : 0;
-                            const marginColor = marginPct > 65 ? 'text-emerald-400' : (marginPct > 45 ? 'text-amber-400' : 'text-rose-400');
-                            
-                            return `
-                                <div class="kid-card bg-indigo-900 border-2 border-indigo-700 p-5 flex flex-col justify-between shadow-lg">
-                                    <div>
-                                        <div class="flex items-start justify-between gap-2 mb-2">
-                                            <h3 class="font-black text-base text-white">${p.name}</h3>
-                                            <span class="text-sm font-black text-indigo-950 bg-amber-400 px-3 py-1 rounded-xl shadow">€ ${p.price.toFixed(2)}</span>
-                                        </div>
-                                        ${p.badge ? `<span class="inline-block bg-pink-600 text-white text-[10px] font-black px-2.5 py-0.5 rounded-lg mb-2 shadow">${p.badge}</span>` : ''}
-                                        <p class="text-xs text-indigo-200 mb-4 font-medium leading-relaxed">${p.desc}</p>
-                                    </div>
-                                    <div class="pt-3 border-t-2 border-indigo-800/80 flex items-center justify-between text-xs">
-                                        <div class="space-y-0.5">
-                                            <div class="text-indigo-300 font-bold">Food Cost: <span class="text-amber-300 font-black">€ ${foodCost.toFixed(2)}</span></div>
-                                            <div class="text-indigo-300 font-bold">Margine: <span class="${marginColor} font-black">€ ${margin.toFixed(2)} (${marginPct.toFixed(0)}%)</span></div>
-                                            <div class="text-indigo-400 font-semibold text-[10px]">Stima Vendite: ${p.sales || 0} pz</div>
-                                        </div>
-                                        <button onclick="openProductModal('${p.id}')" class="bg-indigo-800 hover:bg-indigo-700 text-amber-300 font-black px-3 py-2 rounded-xl border-2 border-indigo-600 transition flex items-center gap-1.5 cursor-pointer shadow">
-                                            <i class="fa-solid fa-pen text-xs"></i> Modifica
-                                        </button>
-                                    </div>
-                                </div>
-                            `;
-                        }).join('')}
-                    </div>
+                tbody.innerHTML += `
+                    <tr>
+                        <td><strong>${p.name}</strong></td>
+                        <td><span class="badge badge-warning">${p.category}</span></td>
+                        <td>€ ${p.price.toFixed(2)}</td>
+                        <td>€ ${fc.toFixed(2)}</td>
+                        <td><span class="badge ${badgeClass}">${incidenza}%</span></td>
+                        <td style="color:var(--success); font-weight:bold;">€ ${margine}</td>
+                        <td>
+                            <button class="btn btn-secondary" style="padding:4px 8px; font-size:0.8rem;" onclick="editProduct('${p.id}')"><i class="fa-solid fa-pen"></i></button>
+                        </td>
+                    </tr>
                 `;
-                container.appendChild(section);
-            }
+            });
         }
 
-        // --- MATRICE TABELLA DOSI ---
-        function renderMatrixTable() {
-            const table = document.getElementById('matrixTable');
-            const ingKeys = Object.keys(ingredients);
-            
-            let html = `<thead><tr class="border-b-2 border-indigo-800 bg-indigo-900 text-indigo-200 text-xs font-black"><th class="p-3 sticky left-0 bg-indigo-900 border-r-2 border-indigo-800 min-w-[160px]">Prodotto (Menu)</th>`;
-            ingKeys.forEach(k => {
-                html += `<th class="p-3 whitespace-nowrap border-r border-indigo-800 text-center">${ingredients[k].name} (${ingredients[k].unit})</th>`;
-            });
-            html += `</tr></thead><tbody>`;
+        // --- RENDER TABELLA INGREDIENTI ---
+        function renderIngredients() {
+            const tbody = document.getElementById('ingredientsTableBody');
+            tbody.innerHTML = '';
 
-            products.forEach(p => {
-                html += `<tr class="border-b border-indigo-900 hover:bg-indigo-900/60">`;
-                html += `<td class="p-3 sticky left-0 bg-indigo-950 font-black text-amber-300 border-r-2 border-indigo-800 truncate max-w-[160px]">${p.name}</td>`;
-                ingKeys.forEach(k => {
-                    const qty = (p.recipe && p.recipe[k]) ? p.recipe[k] : '-';
-                    const activeClass = qty !== '-' ? 'font-black text-emerald-400 bg-emerald-950/40' : 'text-indigo-700';
-                    html += `<td class="p-3 border-r border-indigo-900 text-center ${activeClass}">${qty}</td>`;
-                });
-                html += `</tr>`;
+            ingredientsData.forEach(i => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td><strong>${i.name}</strong></td>
+                        <td>${i.unit}</td>
+                        <td style="color:var(--accent-color); font-weight:bold;">€ ${i.cost.toFixed(2)}</td>
+                        <td style="color:var(--text-muted);">€ ${i.marketPrice.toFixed(2)}</td>
+                        <td>${i.supplier}</td>
+                        <td>
+                            <button class="btn btn-secondary" style="padding:4px 8px; font-size:0.8rem;" onclick="editIngredient('${i.id}')"><i class="fa-solid fa-pen"></i></button>
+                        </td>
+                    </tr>
+                `;
             });
-
-            html += `</tbody>`;
-            table.innerHTML = html;
         }
 
-        // --- GRAFICO MATRICE KASAVANA-SMITH (ULTRA-SEMPLIFICATO & COLORATO) ---
-        function renderKasavanaChart() {
-            const ctx = document.getElementById('kasavanaChart').getContext('2d');
-            
-            let totalSales = 0;
-            let totalMargin = 0;
-            const points = products.map(p => {
-                const fc = calculateProductFoodCost(p);
-                const margin = p.price - fc;
-                const sales = p.sales || 50;
-                totalSales += sales;
-                totalMargin += margin;
-                return { x: sales, y: margin, name: p.name, cat: p.cat };
+        // --- FILTRI DI RICERCA ---
+        function filterProducts() {
+            let val = document.getElementById('searchProduct').value.toLowerCase();
+            let rows = document.querySelectorAll('#productsTableBody tr');
+            rows.forEach(r => {
+                r.style.display = r.children[0].innerText.toLowerCase().includes(val) ? '' : 'none';
             });
+        }
 
-            const avgSales = totalSales / (products.length || 1);
-            const avgMargin = totalMargin / (products.length || 1);
-
-            let stars = 0, plowhorses = 0, puzzles = 0, dogs = 0;
-            points.forEach(pt => {
-                if (pt.x >= avgSales && pt.y >= avgMargin) stars++;
-                else if (pt.x >= avgSales && pt.y < avgMargin) plowhorses++;
-                else if (pt.x < avgSales && pt.y >= avgMargin) puzzles++;
-                else dogs++;
+        function filterIngredients() {
+            let val = document.getElementById('searchIngr').value.toLowerCase();
+            let rows = document.querySelectorAll('#ingredientsTableBody tr');
+            rows.forEach(r => {
+                r.style.display = r.children[0].innerText.toLowerCase().includes(val) ? '' : 'none';
             });
+        }
 
-            document.getElementById('countStars').innerText = stars;
-            document.getElementById('countPlowhorses').innerText = plowhorses;
-            document.getElementById('countPuzzles').innerText = puzzles;
-            document.getElementById('countDogs').innerText = dogs;
-
-            if (kasavanaChartInstance) kasavanaChartInstance.destroy();
-
-            kasavanaChartInstance = new Chart(ctx, {
-                type: 'scatter',
+        // --- GRAFICI ---
+        function initCharts() {
+            // Chart 1: FC per categoria
+            const ctx1 = document.getElementById('chartCategoryFC').getContext('2d');
+            new Chart(ctx1, {
+                type: 'doughnut',
                 data: {
+                    labels: ['Pizze Rosse', 'Pizze Bianche', 'Hamburger', 'Fritti'],
                     datasets: [{
-                        label: 'Prodotti',
-                        data: points,
-                        backgroundColor: points.map(pt => {
-                            if (pt.x >= avgSales && pt.y >= avgMargin) return '#10b981'; // ⭐ Stelle (Verde)
-                            if (pt.x >= avgSales && pt.y < avgMargin) return '#f59e0b'; // 🐎 Cavalli (Giallo)
-                            if (pt.x < avgSales && pt.y >= avgMargin) return '#3b82f6'; // 🧩 Rebus (Blu)
-                            return '#f43f5e'; // 🐶 Zavorre (Rosso)
-                        }),
-                        pointRadius: 9,
-                        pointHoverRadius: 13
+                        data: [24.5, 27.2, 31.0, 21.8],
+                        backgroundColor: ['#f59e0b', '#10b981', '#ef4444', '#3b82f6']
                     }]
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        tooltip: {
-                            backgroundColor: '#1e1b4b',
-                            titleColor: '#f59e0b',
-                            bodyColor: '#ffffff',
-                            titleFont: { size: 14, weight: 'bold' },
-                            bodyFont: { size: 12 },
-                            padding: 12,
-                            borderColor: '#6366f1',
-                            borderWidth: 2,
-                            displayColors: false,
-                            callbacks: {
-                                label: function(context) {
-                                    const pt = context.raw;
-                                    let catEmoji = "⭐ Stella";
-                                    if (pt.x >= avgSales && pt.y < avgMargin) catEmoji = "🐎 Cavallo da Tiro";
-                                    else if (pt.x < avgSales && pt.y >= avgMargin) catEmoji = "🧩 Rebus";
-                                    else if (pt.x < avgSales && pt.y < avgMargin) catEmoji = "🐶 Zavorra";
+                options: { responsive: true, maintainAspectRatio: false }
+            });
 
-                                    return [
-                                        `📌 ${pt.name}`,
-                                        `🏷️ Categoria: ${catEmoji}`,
-                                        `💰 Margine Netto: € ${pt.y.toFixed(2)}`,
-                                        `📊 Vendite Stimate: ${pt.x} pz`
-                                    ];
-                                }
-                            }
-                        },
-                        legend: { display: false }
-                    },
-                    scales: {
-                        x: {
-                            title: { display: true, text: '➡️ PIÙ VENDUTI (Popolarità)', color: '#f59e0b', font: { size: 13, weight: 'bold' } },
-                            grid: { color: '#312e81' },
-                            ticks: { color: '#94a3b8' }
-                        },
-                        y: {
-                            title: { display: true, text: '⬆️ PIÙ GUADAGNO (Margine €)', color: '#10b981', font: { size: 13, weight: 'bold' } },
-                            grid: { color: '#312e81' },
-                            ticks: { color: '#94a3b8' }
-                        }
-                    }
+            // Chart 2: Top Margine
+            const ctx2 = document.getElementById('chartTopMargin').getContext('2d');
+            new Chart(ctx2, {
+                type: 'bar',
+                data: {
+                    labels: ['BELIZE', 'HAITY COTTO', 'MARINARA'],
+                    datasets: [{
+                        label: 'Margine Lordo in €',
+                        data: [6.95, 5.15, 5.68],
+                        backgroundColor: '#10b981'
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        }
+
+        // --- AI ASSISTANT SIMULATED LOGIC ---
+        function askAI() {
+            const input = document.getElementById('aiInput');
+            const chatBox = document.getElementById('chatBox');
+            if(!input.value.trim()) return;
+
+            const userText = input.value;
+            chatBox.innerHTML += `<div class="chat-msg user">${userText}</div>`;
+            input.value = '';
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            setTimeout(() => {
+                let aiReply = "Sto analizzando la tua richiesta sul Food Cost... ";
+                let query = userText.toLowerCase();
+
+                if (query.includes("belize")) {
+                    aiReply = "Per la pizza <strong>BELIZE</strong>: Il Food Cost attuale è di circa <strong>€ 2.55</strong> (Incidenza 26.8% su prezzo di € 9.50). La componente più costosa è la <em>Mozzarella</em> ed il <em>Prosciutto/Pancetta</em>. Riducendo la grammatura mozzarella da 140g a 120g risparmi € 0.18 a pizza aumentando il margine del +2%!";
+                } else if (query.includes("supermercato") || query.includes("prezzo")) {
+                    aiReply = "I prezzi di riferimento del supermercato ti permettono di capire se i tuoi fornitori diretti ti stanno applicando tariffe fuori mercato. Ricorda che il Food Cost calcola solo il costo di acquisto reale dal fornitore Ho.Re.Ca.";
+                } else {
+                    aiReply = "Come esperto di Food Cost, ti suggerisco di mantenere un'incidenza totale del piatto compresa tra il **22% ed il 28%**. Vuoi che calcoliamo insieme il margine di una nuova ricetta?";
                 }
-            });
+
+                chatBox.innerHTML += `<div class="chat-msg ai">${aiReply}</div>`;
+                chatBox.scrollTop = chatBox.scrollHeight;
+            }, 800);
         }
 
-        function toggleMatrixView() {
-            document.getElementById('matrixSection').classList.toggle('hidden');
-        }
-
-        function toggleChartView() {
-            document.getElementById('chartSection').classList.toggle('hidden');
-        }
-
-        // --- MODALE MODIFICA ---
-        function openProductModal(productId) {
-            currentEditingProductId = productId;
-            const product = products.find(p => p.id === productId);
-            if (!product) return;
-
-            document.getElementById('modalProductName').innerText = `Gestione Piatto: ${product.name}`;
-            document.getElementById('modalProductPrice').value = product.price;
-            document.getElementById('modalProductPopularity').value = product.sales || 50;
-
-            renderModalIngredients(product);
-            document.getElementById('productModal').classList.remove('hidden');
-        }
-
-        function closeProductModal() {
-            document.getElementById('productModal').classList.add('hidden');
-            currentEditingProductId = null;
-        }
-
-        function renderModalIngredients(product) {
-            const container = document.getElementById('modalIngredientsContainer');
-            container.innerHTML = '';
-
-            if (!product.recipe) product.recipe = {};
-
-            for (let [ingKey, qty] of Object.entries(product.recipe)) {
-                const ing = ingredients[ingKey];
-                if (!ing) continue;
-
-                const row = document.createElement('div');
-                row.className = "flex items-center justify-between gap-2 bg-indigo-900 p-2.5 rounded-2xl border-2 border-indigo-800";
-                row.innerHTML = `
-                    <span class="text-xs text-white font-bold flex-1 truncate">${ing.name} (${ing.unit})</span>
-                    <input type="number" step="0.01" value="${qty}" onchange="updateModalRecipeQty('${ingKey}', this.value)" class="w-20 bg-indigo-950 border-2 border-indigo-700 rounded-xl px-2 py-1 text-xs text-right text-white font-black focus:outline-none focus:border-amber-400">
-                    <button onclick="removeIngredientFromProduct('${ingKey}')" class="text-rose-400 hover:text-rose-300 p-2 text-sm cursor-pointer"><i class="fa-solid fa-trash"></i></button>
-                `;
-                container.appendChild(row);
+        // --- MODALI / INTERAZIONI RAPIDE ---
+        function openAddProductModal() {
+            let name = prompt("Inserisci il nome del nuovo prodotto (es. Pizza Speciale):");
+            if (name) {
+                let cat = prompt("Inserisci la Categoria (es. PIZZE BIANCHE):", "PIZZE BIANCHE");
+                let price = parseFloat(prompt("Inserisci Prezzo di Vendita (€):", "8.50"));
+                if (name && price) {
+                    productsData.push({
+                        id: name.toLowerCase().replace(/\s+/g, '_'),
+                        name: name.toUpperCase(),
+                        category: cat || "GENERALE",
+                        price: price,
+                        recipe: [{ ingrId: "impasto", qty: 1 }, { ingrId: "mozzarella", qty: 0.10 }]
+                    });
+                    renderProducts();
+                    alert("Prodotto aggiunto con successo!");
+                }
             }
         }
 
-        function updateModalRecipeQty(ingKey, val) {
-            const product = products.find(p => p.id === currentEditingProductId);
-            if (!product) return;
-            const num = parseFloat(val);
-            if (!isNaN(num) && num > 0) {
-                product.recipe[ingKey] = num;
-            } else {
-                delete product.recipe[ingKey];
+        function editProduct(id) {
+            let p = productsData.find(x => x.id === id);
+            if(p) {
+                let newPrice = prompt(`Modifica prezzo di vendita per ${p.name}:`, p.price);
+                if(newPrice !== null && !isNaN(newPrice)) {
+                    p.price = parseFloat(newPrice);
+                    renderProducts();
+                }
             }
         }
 
-        function removeIngredientFromProduct(ingKey) {
-            const product = products.find(p => p.id === currentEditingProductId);
-            if (!product) return;
-            delete product.recipe[ingKey];
-            renderModalIngredients(product);
-        }
-
-        function addIngredientToProductModal() {
-            const product = products.find(p => p.id === currentEditingProductId);
-            if (!product) return;
-
-            const availableKeys = Object.keys(ingredients).filter(k => !product.recipe[k]);
-            if (availableKeys.length === 0) {
-                alert("Tutti gli ingredienti sono già inseriti!");
-                return;
+        function editIngredient(id) {
+            let ingr = ingredientsData.find(x => x.id === id);
+            if(ingr) {
+                let newCost = prompt(`Modifica costo d'acquisto al ${ingr.unit} per ${ingr.name}:`, ingr.cost);
+                if(newCost !== null && !isNaN(newCost)) {
+                    ingr.cost = parseFloat(newCost);
+                    renderIngredients();
+                    renderProducts(); // Ricalcola subito il food cost dei prodotti!
+                }
             }
-            product.recipe[availableKeys[0]] = 0.1;
-            renderModalIngredients(product);
         }
-
-        function saveProductModal() {
-            const product = products.find(p => p.id === currentEditingProductId);
-            if (!product) return;
-
-            const newPrice = parseFloat(document.getElementById('modalProductPrice').value);
-            const newSales = parseInt(document.getElementById('modalProductPopularity').value);
-
-            if (!isNaN(newPrice) && newPrice >= 0) product.price = newPrice;
-            if (!isNaN(newSales) && newSales >= 0) product.sales = newSales;
-
-            saveData();
-            closeProductModal();
-            renderMenu();
-            renderMatrixTable();
-            renderKasavanaChart();
-        }
-
-        // --- LISTENERS ---
-        function setupEventListeners() {
-            const sidebar = document.getElementById('ingredientsSidebar');
-            const overlay = document.getElementById('sidebarOverlay');
-            const toggleBtn = document.getElementById('sidebarToggle');
-            const closeBtn = document.getElementById('sidebarClose');
-            const matrixBtn = document.getElementById('matrixToggle');
-            const chartBtn = document.getElementById('chartToggle');
-
-            function toggleSidebar() {
-                sidebar.classList.toggle('-translate-x-full');
-                overlay.classList.toggle('hidden');
-            }
-
-            toggleBtn.addEventListener('click', toggleSidebar);
-            closeBtn.addEventListener('click', toggleSidebar);
-            overlay.addEventListener('click', () => {
-                if(!sidebar.classList.contains('-translate-x-full')) toggleSidebar();
-            });
-
-            matrixBtn.addEventListener('click', toggleMatrixView);
-            chartBtn.addEventListener('click', toggleChartView);
-
-            document.getElementById('searchIngredient').addEventListener('input', renderIngredientsSidebar);
-            document.getElementById('searchProduct').addEventListener('input', renderMenu);
-        }
-
-        window.addEventListener('DOMContentLoaded', initApp);
     </script>
 </body>
 </html>
